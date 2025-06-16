@@ -50,7 +50,7 @@ def setup_tables():
             )
         """)
 
-        # Таблица Course_of_lecture (из скрипта Егора)
+        # Таблица Course_of_lecture
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Course_of_lecture (
                 id SERIAL PRIMARY KEY,
@@ -88,7 +88,7 @@ def setup_tables():
             )
         """)
 
-        # Таблица Lecture (из скрипта Егора, без tags, с добавленным status)
+        # Таблица Lecture (без tags, с добавленным status)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Lecture (
                 id SERIAL PRIMARY KEY,
@@ -134,7 +134,7 @@ def setup_tables():
             )
         """)
 
-        # Таблица Material_of_lecture (из скрипта Егора, с добавленными полями)
+        # Таблица Material_of_lecture (с добавленными полями)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Material_of_lecture (
                 id SERIAL PRIMARY KEY,
