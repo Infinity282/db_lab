@@ -1,7 +1,6 @@
 import psycopg2
 from env import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
-
 def check_database_data_simple():
     """Упрощенная версия без внешних зависимостей"""
     conn = psycopg2.connect(
@@ -16,9 +15,9 @@ def check_database_data_simple():
     try:
         tables = [
             "Universities", "Institutes", "Departments",
-            "Specialties", "Courses", "Student_Groups",
-            "Group_Courses", "Session_Types", "Lecture_Sessions",
-            "Lecture_Materials", "Schedule", "Students", "Attendance"
+            "Specialties", "Course_of_lecture", "Student_Groups",
+            "Group_Courses", "Lecture", "Material_of_lecture",
+            "Schedule", "Students", "Attendance"
         ]
 
         print("\n" + "="*50)
@@ -62,7 +61,6 @@ def check_database_data_simple():
     finally:
         cur.close()
         conn.close()
-
 
 if __name__ == "__main__":
     check_database_data_simple()

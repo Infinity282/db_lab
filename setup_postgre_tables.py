@@ -1,7 +1,6 @@
 import psycopg2
 from env import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
-
 def setup_tables():
     conn = psycopg2.connect(
         dbname=DB_NAME,
@@ -23,7 +22,7 @@ def setup_tables():
             )
         """)
 
-    # Таблица Institutes
+        # Таблица Institutes
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Institutes (
                 institute_id SERIAL PRIMARY KEY,
@@ -51,14 +50,13 @@ def setup_tables():
             )
         """)
 
-        # Таблица Courses
+        # Таблица Course_of_lecture
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS Courses (
-                course_id SERIAL PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS Course_of_lecture (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
                 department_id INTEGER REFERENCES Departments(department_id),
-                name VARCHAR(255) NOT NULL,
-                description TEXT,
-                duration_weeks INTEGER
+                specialty_id INTEGER REFERENCES Specialties(specialty_id)
             )
         """)
 
@@ -73,11 +71,11 @@ def setup_tables():
             )
         """)
 
-        # Таблица Group_Courses
+        # Таблица Group_Courses (обновлена для ссылки на Course_of_lecture)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Group_Courses (
                 group_id INTEGER REFERENCES Student_Groups(group_id),
-                course_id INTEGER REFERENCES Courses(course_id),
+                course_id INTEGER REFERENCES Course_of_lecture(id),
                 PRIMARY KEY (group_id, course_id)
             )
         """)
@@ -90,25 +88,22 @@ def setup_tables():
             )
         """)
 
-        # Таблица Lecture_Sessions
+        # Таблица Lecture (без tags, с добавленным status)
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS Lecture_Sessions (
-                session_id SERIAL PRIMARY KEY,
-                course_id INTEGER REFERENCES Courses(course_id),
-                session_type_id INTEGER REFERENCES Session_Types(session_type_id),
-                topic VARCHAR(255) NOT NULL,
-                duration_minutes INTEGER,
-                description TEXT,
-                tags JSON
+            CREATE TABLE IF NOT EXISTS Lecture (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                course_of_lecture_id INTEGER REFERENCES Course_of_lecture(id),
+                status VARCHAR(50)
             )
         """)
 
-        # Таблица Schedule
+        # Таблица Schedule (обновлена для ссылки на Lecture)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Schedule (
                 schedule_id SERIAL PRIMARY KEY,
                 group_id INTEGER REFERENCES Student_Groups(group_id),
-                session_id INTEGER REFERENCES Lecture_Sessions(session_id),
+                lecture_id INTEGER REFERENCES Lecture(id),
                 room VARCHAR(50),
                 scheduled_date DATE,
                 start_time TIME
@@ -139,12 +134,12 @@ def setup_tables():
             )
         """)
 
-        # Таблица Lecture_Materials
+        # Таблица Material_of_lecture (с добавленными полями)
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS Lecture_Materials (
-                material_id SERIAL PRIMARY KEY,
-                session_id INTEGER REFERENCES Lecture_Sessions(session_id),
-                file_path VARCHAR(255) NOT NULL,
+            CREATE TABLE IF NOT EXISTS Material_of_lecture (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                lecture_id INTEGER REFERENCES Lecture(id),
                 type VARCHAR(50),
                 uploaded_at TIMESTAMP
             )
@@ -159,7 +154,6 @@ def setup_tables():
     finally:
         cur.close()
         conn.close()
-
 
 if __name__ == "__main__":
     setup_tables()

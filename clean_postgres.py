@@ -1,7 +1,6 @@
 import psycopg2
 from env import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
-
 def drop_tables():
     conn = psycopg2.connect(
         dbname=DB_NAME,
@@ -14,14 +13,13 @@ def drop_tables():
 
     try:
         cur.execute("DROP TABLE IF EXISTS Attendance CASCADE")
-        cur.execute("DROP TABLE IF EXISTS Lecture_Materials CASCADE")
+        cur.execute("DROP TABLE IF EXISTS Material_of_lecture CASCADE")
         cur.execute("DROP TABLE IF EXISTS Schedule CASCADE")
         cur.execute("DROP TABLE IF EXISTS Students CASCADE")
-        cur.execute("DROP TABLE IF EXISTS Lecture_Sessions CASCADE")
-        cur.execute("DROP TABLE IF EXISTS Session_Types CASCADE")
+        cur.execute("DROP TABLE IF EXISTS Lecture CASCADE")
         cur.execute("DROP TABLE IF EXISTS Group_Courses CASCADE")
         cur.execute("DROP TABLE IF EXISTS Student_Groups CASCADE")
-        cur.execute("DROP TABLE IF EXISTS Courses CASCADE")
+        cur.execute("DROP TABLE IF EXISTS Course_of_lecture CASCADE")
         cur.execute("DROP TABLE IF EXISTS Specialties CASCADE")
         cur.execute("DROP TABLE IF EXISTS Departments CASCADE")
         cur.execute("DROP TABLE IF EXISTS Institutes CASCADE")
@@ -36,7 +34,6 @@ def drop_tables():
     finally:
         cur.close()
         conn.close()
-
 
 if __name__ == "__main__":
     drop_tables()
