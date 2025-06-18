@@ -2,7 +2,7 @@ import psycopg2
 from env import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
 def check_database_data_simple():
-    """Упрощенная версия без внешних зависимостей"""
+    """Упрощенная версия проверки данных в базе данных"""
     conn = psycopg2.connect(
         dbname=DB_NAME,
         user=DB_USER,
@@ -13,11 +13,12 @@ def check_database_data_simple():
     cur = conn.cursor()
 
     try:
+        # Список таблиц (убрано Group_Courses, так как оно не используется)
         tables = [
             "Universities", "Institutes", "Departments",
             "Specialties", "Course_of_lecture", "Student_Groups",
-            "Group_Courses", "Lecture", "Material_of_lecture",
-            "Schedule", "Students", "Attendance"
+            "Lecture", "Material_of_lecture", "Schedule",
+            "Students", "Attendance"
         ]
 
         print("\n" + "="*50)
@@ -25,16 +26,29 @@ def check_database_data_simple():
         print("="*50 + "\n")
 
         for table in tables:
+            # Проверка существования таблицы
+            cur.execute("""
+                SELECT EXISTS (
+                    SELECT FROM pg_tables 
+                    WHERE schemaname = 'public' AND tablename = %s
+                )
+            """, (table.lower(),))
+            exists = cur.fetchone()[0]
+            if not exists:
+                print(f"\nТаблица: {table} - не существует")
+                print("-"*50 + "\n")
+                continue
+
             # Получаем количество записей
-            cur.execute(f"SELECT COUNT(*) FROM {table}")
+            cur.execute("SELECT COUNT(*) FROM %s", (psycopg2.extensions.AsIs(table),))
             count = cur.fetchone()[0]
 
             # Получаем информацию о колонках
-            cur.execute(f"""
+            cur.execute("""
                 SELECT column_name, data_type 
                 FROM information_schema.columns 
-                WHERE table_name = '{table.lower()}'
-            """)
+                WHERE table_name = %s
+            """, (table.lower(),))
             columns = cur.fetchall()
 
             print(f"\nТаблица: {table} (записей: {count})")
@@ -44,13 +58,18 @@ def check_database_data_simple():
                 print(f"  {col[0]} ({col[1]})")
 
             if count > 0:
+                # Получаем имена колонок для читаемого вывода
+                cur.execute("SELECT * FROM %s LIMIT 0", (psycopg2.extensions.AsIs(table),))
+                col_names = [desc[0] for desc in cur.description]
+
                 # Получаем первые 3 записи
-                cur.execute(f"SELECT * FROM {table} LIMIT 3")
+                cur.execute("SELECT * FROM %s LIMIT 3", (psycopg2.extensions.AsIs(table),))
                 rows = cur.fetchall()
 
                 print("\nПример данных:")
                 for row in rows:
-                    print("  ", row)
+                    row_data = dict(zip(col_names, row))
+                    print("  ", row_data)
             else:
                 print("\nТаблица пуста")
 

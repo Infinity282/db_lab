@@ -3,7 +3,7 @@ from datetime import timedelta
 import random
 from datetime import datetime
 import psycopg2
-from consts import ATTENDANCE, COURSE_OF_LECTURE, DEPARTMENTS, GROUP_COURSES, INSTITUTES, LECTURE, MATERIAL_OF_LECTURE, SCHEDULE, SPECIALTIES, STUDENT_GROUPS, TEST_STUDENTS, TEST_SCHEDULE, TEST_ATTENDANCE, UNIVERSITIES
+from consts import ATTENDANCE, COURSE_OF_LECTURE, DEPARTMENTS, INSTITUTES, LECTURE, MATERIAL_OF_LECTURE, SCHEDULE, SPECIALTIES, STUDENT_GROUPS, TEST_STUDENTS, TEST_SCHEDULE, TEST_ATTENDANCE, UNIVERSITIES
 from setup_postgre_tables import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
 USE_TEST_DATA = True
@@ -22,8 +22,8 @@ def insert_institutes(cur):
     print("Добавление институтов")
     for inst in INSTITUTES:
         cur.execute(
-            "INSERT INTO Institutes (name, university_id) VALUES (%s, %s)",
-            inst
+            "INSERT INTO Institutes (university_id, name, dean) VALUES (%s, %s, %s)",
+            (inst[1], inst[0], None)
         )
 
 def insert_departments(cur):
@@ -31,12 +31,12 @@ def insert_departments(cur):
     print("Добавление кафедр")
     for dep in DEPARTMENTS:
         cur.execute(
-            "INSERT INTO Departments (name, institute_id) VALUES (%s, %s)",
-            dep
+            "INSERT INTO Departments (institute_id, name, head) VALUES (%s, %s, %s)",
+            (dep[1], dep[0], None)
         )
 
 def insert_specialties(cur):
-    """Добавление специальностей"""
+    """Добавление специальностей (оставлено для совместимости)"""
     print("Добавление специальностей")
     for special in SPECIALTIES:
         cur.execute(
@@ -50,9 +50,9 @@ def insert_student_groups(cur):
     for group in STUDENT_GROUPS:
         cur.execute(
             """
-            INSERT INTO Student_Groups (name, department_id, specialty_id, course_year)
-            VALUES (%s, %s, %s, %s)
-            """, group
+            INSERT INTO Student_Groups (department_id, name, course_year)
+            VALUES (%s, %s, %s)
+            """, (group[1], group[0], group[2])
         )
 
 def insert_course_of_lecture(cur):
@@ -61,20 +61,9 @@ def insert_course_of_lecture(cur):
     for course in COURSE_OF_LECTURE:
         cur.execute(
             """
-            INSERT INTO Course_of_lecture (name, department_id, specialty_id)
-            VALUES (%s, %s, %s)
-            """, course
-        )
-
-def insert_group_courses(cur):
-    """Добавление групп и курсов"""
-    print("Добавление групп и курсов")
-    for course in GROUP_COURSES:
-        cur.execute(
-            """
-            INSERT INTO Group_Courses (group_id, course_id)
-            VALUES (%s, %s)
-            """, course
+            INSERT INTO Course_of_lecture (department_id, name, description, tech_requirements)
+            VALUES (%s, %s, %s, %s)
+            """, (course[1], course[0], course[2], course[3])  # Исправлен порядок
         )
 
 def insert_and_generate_students(cur):
@@ -84,12 +73,12 @@ def insert_and_generate_students(cur):
         for student in TEST_STUDENTS:
             cur.execute(
                 """
-                INSERT INTO Students (group_id, name, enrollment_year, date_of_birth, email, book_number)
+                INSERT INTO Students (student_group_id, name, book_number, enrollment_year, date_of_birth, email)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 """, student
             )
     else:
-        cur.execute("SELECT group_id, name FROM Student_Groups;")
+        cur.execute("SELECT id, name FROM Student_Groups;")
         groups = cur.fetchall()
         for group_id, group_name in groups:
             for i in range(20):
@@ -102,27 +91,22 @@ def insert_and_generate_students(cur):
                 month = random.randint(1, 12)
                 day = random.randint(1, 28)
                 date_of_birth = datetime(birth_year, month, day).date()
-                group_letter = group_name[0:1].upper()
-                book_number = (
-                    f"{str(enrollment_year)[-2:]}"
-                    f"{group_name[0:1].upper()}"
-                    f"{random.randint(1000, 9999):04d}"
-                )
+                book_number = f"{str(enrollment_year)[-2:]}{group_name[0:1].upper()}{random.randint(1000, 9999):04d}"
                 cur.execute(
                     """
-                    INSERT INTO Students (group_id, name, enrollment_year, date_of_birth, email, book_number)
+                    INSERT INTO Students (student_group_id, name, book_number, enrollment_year, date_of_birth, email)
                     VALUES (%s, %s, %s, %s, %s, %s)
-                    """, (group_id, name, enrollment_year, date_of_birth, email, book_number)
+                    """, (group_id, name, book_number, enrollment_year, date_of_birth, email)
                 )
 
-def insert_and_generate_lectures(cur):
-    """Добавление и генерация лекций"""
-    print("Добавление и генерация лекций")
+def insert_lectures(cur):
+    """Добавление лекций"""
+    print("Добавление лекций")
     for lecture in LECTURE:
         cur.execute(
             """
-            INSERT INTO Lecture (name, course_of_lecture_id, status)
-            VALUES (%s, %s, %s)
+            INSERT INTO Lecture (course_id, topic, lecture_date, duration, tags)
+            VALUES (%s, %s, %s, %s, %s)
             """, lecture
         )
 
@@ -132,8 +116,8 @@ def insert_material_of_lecture(cur):
     for material in MATERIAL_OF_LECTURE:
         cur.execute(
             """
-            INSERT INTO Material_of_lecture (name, lecture_id, type, uploaded_at)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO Material_of_lecture (lecture_id, file_path, uploaded_at)
+            VALUES (%s, %s, %s)
             """, material
         )
 
@@ -143,8 +127,10 @@ def insert_schedule(cur):
     schedule_data = TEST_SCHEDULE if USE_TEST_DATA else SCHEDULE
     for schedule in schedule_data:
         cur.execute(
-            "INSERT INTO Schedule (group_id, lecture_id, room, scheduled_date, start_time) VALUES (%s, %s, %s, %s, %s)",
-            schedule
+            """
+            INSERT INTO Schedule (student_group_id, lecture_id, room, scheduled_date, lecture_time, planned_hours)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """, schedule
         )
 
 def insert_attendance(cur):
@@ -153,8 +139,10 @@ def insert_attendance(cur):
     attendance_data = TEST_ATTENDANCE if USE_TEST_DATA else ATTENDANCE
     for attendance in attendance_data:
         cur.execute(
-            "INSERT INTO Attendance (schedule_id, student_id, attended, absence_reason) VALUES (%s, %s, %s, %s)",
-            attendance
+            """
+            INSERT INTO Attendance (schedule_id, student_id, attended, attendance_date)
+            VALUES (%s, %s, %s, %s)
+            """, attendance
         )
 
 def seed_database():
@@ -176,8 +164,7 @@ def seed_database():
         insert_student_groups(cur)
         insert_course_of_lecture(cur)
         insert_and_generate_students(cur)
-        insert_group_courses(cur)
-        insert_and_generate_lectures(cur)
+        insert_lectures(cur)
         insert_material_of_lecture(cur)
         insert_schedule(cur)
         insert_attendance(cur)

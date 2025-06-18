@@ -1,5 +1,11 @@
+# -*- coding: utf-8 -*-
 import psycopg2
-from env import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
+
+DB_HOST = "localhost"
+DB_NAME = "postgres_db"
+DB_USER = "postgres_user"
+DB_PASSWORD = "postgres_password"
+DB_PORT = 5430
 
 def setup_tables():
     conn = psycopg2.connect(
@@ -12,145 +18,131 @@ def setup_tables():
     cur = conn.cursor()
 
     try:
-        # Таблица Universities
+        # Universities
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Universities (
-                university_id SERIAL PRIMARY KEY,
+                id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
-                address TEXT,
-                founded_date DATE
-            )
+                address VARCHAR(255) NOT NULL,
+                founded_date DATE NOT NULL
+            );
         """)
 
-        # Таблица Institutes
+        # Institutes
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Institutes (
-                institute_id SERIAL PRIMARY KEY,
-                university_id INTEGER REFERENCES Universities(university_id),
-                name VARCHAR(255) NOT NULL
-            )
+                id SERIAL PRIMARY KEY,
+                university_id INT REFERENCES Universities(id),
+                name VARCHAR(255) NOT NULL,
+                dean VARCHAR(255)
+            );
         """)
 
-        # Таблица Departments
+        # Departments
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Departments (
-                department_id SERIAL PRIMARY KEY,
-                institute_id INTEGER REFERENCES Institutes(institute_id),
-                name VARCHAR(255) NOT NULL
-            )
+                id SERIAL PRIMARY KEY,
+                institute_id INT REFERENCES Institutes(id),
+                name VARCHAR(255) NOT NULL,
+                head VARCHAR(255)
+            );
         """)
 
-        # Таблица Specialties
+        # Specialties (оставлено для совместимости)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Specialties (
-                specialty_id SERIAL PRIMARY KEY,
-                code VARCHAR(20) NOT NULL,
+                code VARCHAR(10) PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 description TEXT
-            )
+            );
         """)
 
-        # Таблица Course_of_lecture
+        # Student_Groups
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS Student_Groups (
+                id SERIAL PRIMARY KEY,
+                department_id INT REFERENCES Departments(id),
+                name VARCHAR(10) NOT NULL,
+                course_year INT NOT NULL
+            );
+        """)
+
+        # Course_of_lecture
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Course_of_lecture (
                 id SERIAL PRIMARY KEY,
-                name VARCHAR(100) NOT NULL,
-                department_id INTEGER REFERENCES Departments(department_id),
-                specialty_id INTEGER REFERENCES Specialties(specialty_id)
-            )
+                department_id INT REFERENCES Departments(id),
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                tech_requirements TEXT
+            );
         """)
 
-        # Таблица Student_Groups
+        # Students
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS Student_Groups (
-                group_id SERIAL PRIMARY KEY,
-                department_id INTEGER REFERENCES Departments(department_id),
-                specialty_id INTEGER REFERENCES Specialties(specialty_id),
-                name VARCHAR(50) NOT NULL,
-                course_year INTEGER
-            )
+            CREATE TABLE IF NOT EXISTS Students (
+                id SERIAL PRIMARY KEY,
+                student_group_id INT REFERENCES Student_Groups(id),
+                name VARCHAR(255) NOT NULL,
+                book_number VARCHAR(10) NOT NULL,
+                enrollment_year INT NOT NULL,
+                date_of_birth DATE NOT NULL,
+                email VARCHAR(255) NOT NULL
+            );
         """)
 
-        # Таблица Group_Courses (обновлена для ссылки на Course_of_lecture)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Group_Courses (
-                group_id INTEGER REFERENCES Student_Groups(group_id),
-                course_id INTEGER REFERENCES Course_of_lecture(id),
-                PRIMARY KEY (group_id, course_id)
-            )
-        """)
-
-        # Таблица Session_Types
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Session_Types (
-                session_type_id SERIAL PRIMARY KEY,
-                name VARCHAR(50) NOT NULL
-            )
-        """)
-
-        # Таблица Lecture (без tags, с добавленным status)
+        # Lecture
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Lecture (
                 id SERIAL PRIMARY KEY,
-                name VARCHAR(100) NOT NULL,
-                course_of_lecture_id INTEGER REFERENCES Course_of_lecture(id),
-                status VARCHAR(50)
-            )
+                course_id INT REFERENCES Course_of_lecture(id),
+                topic VARCHAR(255) NOT NULL,
+                lecture_date DATE NOT NULL,
+                duration INT NOT NULL,
+                tags VARCHAR(255)
+            );
         """)
 
-        # Таблица Schedule (обновлена для ссылки на Lecture)
+        # Schedule
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Schedule (
-                schedule_id SERIAL PRIMARY KEY,
-                group_id INTEGER REFERENCES Student_Groups(group_id),
-                lecture_id INTEGER REFERENCES Lecture(id),
-                room VARCHAR(50),
-                scheduled_date DATE,
-                start_time TIME
-            )
+                id SERIAL PRIMARY KEY,
+                student_group_id INT REFERENCES Student_Groups(id),
+                lecture_id INT REFERENCES Lecture(id),
+                room VARCHAR(10) NOT NULL,
+                scheduled_date DATE NOT NULL,
+                lecture_time TIME NOT NULL,
+                planned_hours INT NOT NULL
+            );
         """)
 
-        # Таблица Students
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Students (
-                student_id SERIAL PRIMARY KEY,
-                group_id INTEGER REFERENCES Student_Groups(group_id),
-                name VARCHAR(255) NOT NULL,
-                enrollment_year INTEGER,
-                date_of_birth DATE,
-                email VARCHAR(255),
-                book_number VARCHAR(20)
-            )
-        """)
-
-        # Таблица Attendance
+        # Attendance
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Attendance (
-                attendance_id SERIAL PRIMARY KEY,
-                schedule_id INTEGER REFERENCES Schedule(schedule_id),
-                student_id INTEGER REFERENCES Students(student_id),
+                id SERIAL PRIMARY KEY,
+                schedule_id INT REFERENCES Schedule(id),
+                student_id INT REFERENCES Students(id),
                 attended BOOLEAN NOT NULL,
-                absence_reason TEXT
-            )
+                attendance_date DATE
+            );
         """)
 
-        # Таблица Material_of_lecture (с добавленными полями)
+        # Material_of_lecture
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Material_of_lecture (
                 id SERIAL PRIMARY KEY,
-                name VARCHAR(100) NOT NULL,
-                lecture_id INTEGER REFERENCES Lecture(id),
-                type VARCHAR(50),
-                uploaded_at TIMESTAMP
-            )
+                lecture_id INT REFERENCES Lecture(id),
+                file_path VARCHAR(255) NOT NULL,
+                uploaded_at TIMESTAMP NOT NULL
+            );
         """)
 
         conn.commit()
-        print("Таблицы успешно созданы!")
+        print("Таблицы успешно созданы в PostgreSQL")
 
     except Exception as e:
         conn.rollback()
-        print(f"Ошибка: {e}")
+        print(f"Ошибка при создании таблиц: {e}")
     finally:
         cur.close()
         conn.close()
