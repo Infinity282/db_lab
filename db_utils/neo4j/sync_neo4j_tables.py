@@ -1,19 +1,16 @@
 import psycopg2
 from neo4j import GraphDatabase
 import datetime
+from env import (DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT,
+                 DB_USER, NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
 
-# Конфигурация подключения
 PG_CONFIG = {
-    'dbname': "postgres_db",
-    'user': "postgres_user",
-    'password': "postgres_password",
-    'host': 'localhost',
-    'port': 5430,
+    'dbname': DB_NAME,
+    'user': DB_USER,
+    'password': DB_PASSWORD,
+    'host': DB_HOST,
+    'port': DB_PORT,
 }
-
-NEO4J_URI = 'bolt://localhost:7687'  # Исправлен порт с 7687 на 7688
-NEO4J_USER = 'neo4j'
-NEO4J_PASSWORD = 'strongpassword'
 
 
 class SyncService:

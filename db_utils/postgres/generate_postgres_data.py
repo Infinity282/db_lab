@@ -1,11 +1,10 @@
 from datetime import timedelta
-import json
 import random
 from datetime import datetime
 import psycopg2
 from psycopg2.extras import Json
-from consts import ATTENDANCE, COURSES, DEPARTMENTS, GROUP_COURSES, INSTITUTES, SCHEDULE, SESSION_TYPES, SPECIALTIES, STUDENT_GROUPS, UNIVERSITIES
-from setup_postgre_tables import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
+from .tables_data import ATTENDANCE, COURSES, DEPARTMENTS, GROUP_COURSES, INSTITUTES, SCHEDULE, SESSION_TYPES, SPECIALTIES, STUDENT_GROUPS, UNIVERSITIES
+from .create_postgres_tables import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
 
 def insert_universities(cur):
