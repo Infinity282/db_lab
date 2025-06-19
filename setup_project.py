@@ -1,5 +1,4 @@
 from time import sleep
-
 from sync.mongo import create_mongo
 from data_generator import seed_database
 from database_check_data import check_database_data_simple

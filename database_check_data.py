@@ -1,5 +1,5 @@
 import psycopg2
-from env import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
+from env import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER, TABLES
 
 
 def check_database_data_simple():
@@ -14,18 +14,12 @@ def check_database_data_simple():
     cur = conn.cursor()
 
     try:
-        tables = [
-            "Universities", "Institutes", "Departments",
-            "Specialties", "Courses", "Student_Groups",
-            "Group_Courses", "Session_Types", "Lecture_Sessions",
-            "Lecture_Materials", "Schedule", "Students", "Attendance"
-        ]
 
         print("\n" + "="*50)
         print("ПРОВЕРКА ДАННЫХ В БАЗЕ ДАННЫХ")
         print("="*50 + "\n")
 
-        for table in tables:
+        for table in TABLES:
             # Получаем количество записей
             cur.execute(f"SELECT COUNT(*) FROM {table}")
             count = cur.fetchone()[0]

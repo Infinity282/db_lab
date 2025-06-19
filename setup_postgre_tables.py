@@ -13,113 +13,49 @@ def setup_tables():
     cur = conn.cursor()
 
     try:
-        # Таблица Universities
+        # Таблица Universities (университеты)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Universities (
-                university_id SERIAL PRIMARY KEY,
+                id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
-                address TEXT,
-                founded_date DATE
+                address VARCHAR(255) NOT NULL,
+                founded_date DATE NOT NULL
             )
         """)
 
-    # Таблица Institutes
+        # Таблица Institutes (институты)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Institutes (
-                institute_id SERIAL PRIMARY KEY,
-                university_id INTEGER REFERENCES Universities(university_id),
+                id SERIAL PRIMARY KEY,
+                university_id INTEGER REFERENCES Universities(id),
                 name VARCHAR(255) NOT NULL
             )
         """)
 
-        # Таблица Departments
+        # Таблица Departments (кафедры)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Departments (
-                department_id SERIAL PRIMARY KEY,
-                institute_id INTEGER REFERENCES Institutes(institute_id),
+                id SERIAL PRIMARY KEY,
+                institute_id INTEGER REFERENCES Institutes(id),
                 name VARCHAR(255) NOT NULL
             )
         """)
 
-        # Таблица Specialties
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Specialties (
-                specialty_id SERIAL PRIMARY KEY,
-                code VARCHAR(20) NOT NULL,
-                name VARCHAR(255) NOT NULL,
-                description TEXT
-            )
-        """)
-
-        # Таблица Courses
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Courses (
-                course_id SERIAL PRIMARY KEY,
-                department_id INTEGER REFERENCES Departments(department_id),
-                name VARCHAR(255) NOT NULL,
-                description TEXT,
-                duration_weeks INTEGER
-            )
-        """)
-
-        # Таблица Student_Groups
+        # Таблица Student_Groups (студент, которые принадлежат кафедрам)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Student_Groups (
-                group_id SERIAL PRIMARY KEY,
-                department_id INTEGER REFERENCES Departments(department_id),
-                specialty_id INTEGER REFERENCES Specialties(specialty_id),
+                id SERIAL PRIMARY KEY,
+                department_id INTEGER REFERENCES Departments(id),
                 name VARCHAR(50) NOT NULL,
                 course_year INTEGER
-            )
-        """)
-
-        # Таблица Group_Courses
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Group_Courses (
-                group_id INTEGER REFERENCES Student_Groups(group_id),
-                course_id INTEGER REFERENCES Courses(course_id),
-                PRIMARY KEY (group_id, course_id)
-            )
-        """)
-
-        # Таблица Session_Types
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Session_Types (
-                session_type_id SERIAL PRIMARY KEY,
-                name VARCHAR(50) NOT NULL
-            )
-        """)
-
-        # Таблица Lecture_Sessions
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Lecture_Sessions (
-                session_id SERIAL PRIMARY KEY,
-                course_id INTEGER REFERENCES Courses(course_id),
-                session_type_id INTEGER REFERENCES Session_Types(session_type_id),
-                topic VARCHAR(255) NOT NULL,
-                duration_minutes INTEGER,
-                description TEXT,
-                tags JSON
-            )
-        """)
-
-        # Таблица Schedule
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Schedule (
-                schedule_id SERIAL PRIMARY KEY,
-                group_id INTEGER REFERENCES Student_Groups(group_id),
-                session_id INTEGER REFERENCES Lecture_Sessions(session_id),
-                room VARCHAR(50),
-                scheduled_date DATE,
-                start_time TIME
             )
         """)
 
         # Таблица Students
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Students (
-                student_id SERIAL PRIMARY KEY,
-                group_id INTEGER REFERENCES Student_Groups(group_id),
+                id SERIAL PRIMARY KEY,
+                group_id INTEGER REFERENCES Student_Groups(id),
                 name VARCHAR(255) NOT NULL,
                 enrollment_year INTEGER,
                 date_of_birth DATE,
@@ -128,25 +64,67 @@ def setup_tables():
             )
         """)
 
-        # Таблица Attendance
+        # Таблица Specialties
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS Attendance (
-                attendance_id SERIAL PRIMARY KEY,
-                schedule_id INTEGER REFERENCES Schedule(schedule_id),
-                student_id INTEGER REFERENCES Students(student_id),
-                attended BOOLEAN NOT NULL,
-                absence_reason TEXT
+            CREATE TABLE IF NOT EXISTS Specialties (
+                id SERIAL PRIMARY KEY,
+                code VARCHAR(20) NOT NULL,
+                name VARCHAR(255) NOT NULL
             )
         """)
 
-        # Таблица Lecture_Materials
+        # Таблица Course_of_classes
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS Lecture_Materials (
-                material_id SERIAL PRIMARY KEY,
-                session_id INTEGER REFERENCES Lecture_Sessions(session_id),
-                file_path VARCHAR(255) NOT NULL,
-                type VARCHAR(50),
-                uploaded_at TIMESTAMP
+            CREATE TABLE IF NOT EXISTS Course_of_classes (
+                id SERIAL PRIMARY KEY,
+                department_id INTEGER REFERENCES Departments(id),
+                specialty_id INTEGER REFERENCES Specialties(id),
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                tech_requirements TEXT
+            )
+        """)
+
+        # Таблица Class
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS Class (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                course_of_class_id INTEGER REFERENCES Course_of_classes(id),
+                type VARCHAR(50) NOT NULL
+            )
+         """)
+
+        # Таблица Class_Materials
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS Class_Materials (
+                id SERIAL PRIMARY KEY,
+                class_id INTEGER REFERENCES Class(id),
+                content TEXT
+            )
+        """)
+
+        # Таблица Schedule
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS Schedule (
+                id SERIAL PRIMARY KEY,
+                group_id INTEGER REFERENCES Student_Groups(id),
+                course_of_class_id INTEGER REFERENCES Course_of_classes(id),
+                room VARCHAR(50),
+                scheduled_date DATE,
+                start_time TIME,
+                end_time TIME
+            )
+        """)
+
+        # Таблица Attendance
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS Attendance (
+                id SERIAL PRIMARY KEY,
+                schedule_id INTEGER REFERENCES Schedule(id),
+                student_id INTEGER REFERENCES Students(id),
+                attended BOOLEAN NOT NULL,
+                absence_reason TEXT
             )
         """)
 

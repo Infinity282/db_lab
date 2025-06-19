@@ -3,3 +3,12 @@ DB_USER = "postgres_user"
 DB_PASSWORD = "postgres_password"
 DB_HOST = "localhost"
 DB_PORT = "5430"
+MONGO_URI = "mongodb://localhost:27017/"
+MONGO_DB_NAME = "university_db"
+MONGO_USERNAME = "admin"
+MONGO_PASSWORD = "secret"
+TABLES = [
+    "Universities", "Institutes", "Departments",
+    "Specialties", "Student_Groups", "Students", "Course_of_classes",
+    "Class", "Class_Materials", "Schedule", "Attendance"
+]
