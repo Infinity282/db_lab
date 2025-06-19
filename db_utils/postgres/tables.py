@@ -32,7 +32,6 @@ TABLES = {
             (
                 id SERIAL PRIMARY KEY,
                 department_id INTEGER REFERENCES Departments(id),
-                specialty_id INTEGER REFERENCES Specialties(id),
                 name VARCHAR(50) NOT NULL,
                 course_year INTEGER
             )
@@ -77,7 +76,7 @@ TABLES = {
             (
                 id SERIAL PRIMARY KEY,
                 group_id INTEGER REFERENCES Student_Groups(id),
-                course_of_class_id INTEGER REFERENCES Course_of_classes(id),
+                class_id INTEGER REFERENCES Class(id),
                 room VARCHAR(50),
                 scheduled_date DATE,
                 start_time TIME,
@@ -89,8 +88,7 @@ TABLES = {
                 id SERIAL PRIMARY KEY,
                 schedule_id INTEGER REFERENCES Schedule(id),
                 student_id INTEGER REFERENCES Students(id),
-                attended BOOLEAN NOT NULL,
-                absence_reason TEXT
+                attended BOOLEAN NOT NULL
             )
         """
 }
