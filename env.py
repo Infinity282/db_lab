@@ -7,8 +7,8 @@ MONGO_URI = "mongodb://localhost:27017/"
 MONGO_DB_NAME = "university_db"
 MONGO_USERNAME = "admin"
 MONGO_PASSWORD = "secret"
-TABLES = [
-    "Universities", "Institutes", "Departments",
-    "Specialties", "Student_Groups", "Students", "Course_of_classes",
-    "Class", "Class_Materials", "Schedule", "Attendance"
-]
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
+NEO4J_URI = 'bolt://localhost:7687'
+NEO4J_USER = 'neo4j'
+NEO4J_PASSWORD = 'strongpassword'

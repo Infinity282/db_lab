@@ -1,16 +1,7 @@
 import psycopg2
 from pymongo import MongoClient
-# from env import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
-
-DB_NAME = "postgres_db"
-DB_USER = "postgres_user"
-DB_PASSWORD = "postgres_password"
-DB_HOST = "localhost"
-DB_PORT = "5430"
-MONGO_URI = "mongodb://localhost:27017/"
-MONGO_DB_NAME = "university_db"
-MONGO_USERNAME = "admin"
-MONGO_PASSWORD = "secret"
+from env import (DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT,
+                 DB_USER, MONGO_URI, MONGO_DB_NAME, MONGO_USERNAME, MONGO_PASSWORD)
 
 
 def sync_university_hierarchy(mongo_uri=MONGO_URI, db_name=MONGO_DB_NAME):
