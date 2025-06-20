@@ -1,87 +1,173 @@
 import psycopg2
 import redis
+from contextlib import closing
+from datetime import datetime
+import logging
 from env import (DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT,
                  DB_USER, REDIS_HOST, REDIS_PORT)
-from typing import Dict, List
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 
-class RedisSessionManager:
-    """Класс для работы с сессиями в Redis"""
+class RedisStudentSynchronizer:
+    def __init__(self) -> None:
+        self.pg_conn = None
+        self.redis_client = None
+        self.stats = {
+            'students': 0,
+            'start_time': None
+        }
 
-    def __init__(self):
-        self.redis = redis.Redis(
-            host=REDIS_HOST,
-            port=REDIS_PORT,
-            decode_responses=True
-        )
-        self.pg_conn = psycopg2.connect(
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            host=DB_HOST,
-            port=DB_PORT
-        )
+        self.connect_postgres()
+        self.connect_redis()
 
-    def sync_session_types(self) -> None:
-        """Основной метод синхронизации"""
-        print("Синхронизация типов сессий из PostgreSQL в Redis")
+    def connect_postgres(self) -> bool:
+        """Установка соединения с PostgreSQL"""
+        try:
+            self.pg_conn = psycopg2.connect(
+                dbname=DB_NAME,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                host=DB_HOST,
+                port=DB_PORT
+            )
+            logger.info("Успешное подключение к PostgreSQL")
+            return True
+        except psycopg2.Error as e:
+            logger.error(f"Ошибка подключения к PostgreSQL: {e}")
+            return False
 
-        with self.pg_conn.cursor() as pg_cur:
+    def connect_redis(self) -> bool:
+        """Установка соединения с Redis"""
+        try:
+            self.redis_client = redis.Redis(
+                host=REDIS_HOST,
+                port=REDIS_PORT,
+                decode_responses=True
+            )
+            self.redis_client.ping()
+            logger.info("Успешное подключение к Redis")
+            return True
+        except redis.ConnectionError as e:
+            logger.error(f"Ошибка подключения к Redis: {e}")
+            return False
+
+    def close_connections(self) -> None:
+        if self.pg_conn:
+            self.pg_conn.close()
+            logger.info("Соединение с PostgreSQL закрыто")
+        if self.redis_client:
+            self.redis_client.close()
+            logger.info("Соединение с Redis закрыто")
+
+    def clear_redis_data(self) -> None:
+        logger.info("Очистка старых данных в Redis")
+
+        # Удаление ключей студентов
+        student_keys = [
+            key for key in self.redis_client.scan_iter("student:*")]
+        # Удаление индексных ключей
+        index_keys = [
+            key for key in self.redis_client.scan_iter("index:student:*")]
+
+        all_keys = student_keys + index_keys
+        if all_keys:
+            self.redis_client.delete(*all_keys)
+            logger.info(f"Удалено {len(all_keys)} ключей Redis")
+
+    def fetch_students_data(self) -> list:
+        """Получение данных студентов из PostgreSQL"""
+        logger.info("Извлечение данных студентов из PostgreSQL")
+
+        with closing(self.pg_conn.cursor()) as cursor:
             try:
-                self._clear_redis_data()
-                session_types = self._fetch_session_types(pg_cur)
-                self._store_in_redis(session_types)
-                print(
-                    f"Успешно синхронизировано {len(session_types)} типов сессий")
-
-            except Exception as e:
-                self.pg_conn.rollback()
-                print(f"Ошибка синхронизации: {e}")
+                cursor.execute("""
+                    SELECT id, group_id, name, enrollment_year, 
+                           date_of_birth, email, book_number 
+                    FROM Students
+                """)
+                students = cursor.fetchall()
+                logger.info(f"Получено {len(students)} записей о студентах")
+                return students
+            except psycopg2.Error as e:
+                logger.error(f"Ошибка получения данных: {e}")
                 raise
 
-    def _clear_redis_data(self) -> None:
-        """Очистка старых данных в Redis"""
-        for key in self.redis.scan_iter("session_type:*"):
-            self.redis.delete(key)
-        for key in self.redis.scan_iter("index:session_type:*"):
-            self.redis.delete(key)
+    def sync_to_redis(self, students: list) -> None:
+        """Сохранение данных студентов в Redis"""
+        logger.info("Сохранение данных в Redis")
 
-    def _fetch_session_types(self, cursor) -> List[tuple]:
-        """Получение типов сессий из PostgreSQL"""
-        cursor.execute("SELECT session_type_id, name FROM Session_Types")
-        return cursor.fetchall()
+        for student in students:
+            (student_id, group_id, name, enrollment_year,
+             date_of_birth, email, book_number) = student
 
-    def _store_in_redis(self, session_types: List[tuple]) -> None:
-        """Сохранение данных в Redis"""
-        for session_type_id, name in session_types:
-            session_key = f"session_type:{session_type_id}"
-            self.redis.hset(session_key, mapping={
-                'id': session_type_id,
-                'name': name
-            })
-            self.redis.sadd(
-                f"index:session_type:name:{name.lower()}", session_type_id)
+            student_key = f"student:{student_id}"
+            mapping = {
+                'id': student_id,
+                'group_id': group_id or '',
+                'name': name,
+                'enrollment_year': enrollment_year or '',
+                'date_of_birth': str(date_of_birth) if date_of_birth else '',
+                'email': email or '',
+                'book_number': book_number or ''
+            }
+            # Удаление None значений
+            mapping = {k: v for k, v in mapping.items() if v is not None}
 
-    def get_by_id(self, session_type_id: int) -> Dict:
-        """Получить тип сессии по ID"""
-        return self.redis.hgetall(f"session_type:{session_type_id}")
+            self.redis_client.hset(student_key, mapping=mapping)
 
-    def get_by_name(self, name: str) -> List[Dict]:
-        """Поиск по точному названию типа"""
-        session_ids = self.redis.smembers(
-            f"index:session_type:name:{name.lower()}")
-        return [self.redis.hgetall(f"session_type:{id}") for id in session_ids]
+            # Создание индексов
+            self.redis_client.sadd(
+                f"index:student:name:{name.lower()}", student_id)
+            if email:
+                self.redis_client.sadd(
+                    f"index:student:email:{email.lower()}", student_id)
 
-    def close(self):
-        """Закрытие соединений"""
-        self.pg_conn.close()
-        self.redis.close()
+    def run_sync(self) -> bool:
+        """Основной метод выполнения синхронизации"""
+        self.stats['start_time'] = datetime.now()
+        logger.info("Начало синхронизации данных студентов")
+
+        try:
+            if not self.pg_conn:
+                return False
+            if not self.redis_client:
+                return False
+
+            self.clear_redis_data()
+
+            students = self.fetch_students_data()
+            self.stats['students'] = len(students)
+
+            if not students:
+                logger.warning("Нет данных студентов для синхронизации")
+                return False
+
+            self.sync_to_redis(students)
+
+            redis_count = len(self.redis_client.keys("student:*"))
+            if redis_count != self.stats['students']:
+                logger.error(
+                    f"Несоответствие данных: PostgreSQL={self.stats['students']}, Redis={redis_count}")
+                return False
+
+            duration = (datetime.now() -
+                        self.stats['start_time']).total_seconds()
+            logger.info(
+                f"Синхронизация завершена: {self.stats['students']} студентов "
+                f"за {duration:.2f} секунд"
+            )
+            return True
+
+        except Exception as e:
+            logger.exception(f"Критическая ошибка синхронизации: {e}")
+            return False
+        finally:
+            self.close_connections()
 
 
 if __name__ == "__main__":
-    manager = RedisSessionManager()
-    try:
-        manager.sync_session_types()
-        print("Пример лекций:", manager.get_by_name("Лекция"))
-    finally:
-        manager.close()
+    synchronizer = RedisStudentSynchronizer()
+    is_success = synchronizer.run_sync()
