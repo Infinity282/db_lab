@@ -46,8 +46,6 @@ def insert_data_from_dict(cur, table_name, data):
     query = generate_insert_query(table_name, columns)
 
     for row in data:
-        # # Убираем id из данных, если он есть
-        # row_data = row[1:] if len(row) == len(columns) else row
         cur.execute(query, row)
 
 

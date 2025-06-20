@@ -62,6 +62,7 @@ TABLES = {
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(100) NOT NULL,
                 course_of_class_id INTEGER REFERENCES Course_of_classes(id),
+                tags TEXT,
                 type VARCHAR(50) NOT NULL
             )
         """,

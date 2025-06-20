@@ -166,6 +166,14 @@ class RedisStudentSynchronizer:
             self.close_connections()
 
 
-if __name__ == "__main__":
+def main():
     synchronizer = RedisStudentSynchronizer()
     is_success = synchronizer.run_sync()
+
+    if not is_success:
+        logger.error("Синхронизация завершена с ошибками")
+        return
+
+
+if __name__ == "__main__":
+    main()
