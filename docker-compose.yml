@@ -1,17 +1,74 @@
 services:
   gateway:
     image: gateway
+    build:
+      context: ./gateway
     ports:
-      - '1337:1337'
+      - "1337:1337"
     environment:
+      - JWT_SECRET_KEY=2e4f746042bfe1d5d6a3d8f877696f45c5ad0ebc8dc76d75e80f35ed167420b1
       - LAB1_URL=http://lab1:5001
+      - LAB2_URL=http://lab2:5002
+      - LAB3_URL=http://lab3:5003
     networks:
       - db-network
 
   lab1:
     image: lab1
     ports:
-      - '5001:5001'
+      - "5001:5001"
+    networks:
+      - db-network
+
+  lab2:
+    image: lab2
+    build:
+      context: ./lab2
+    ports:
+      - "5002:5002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    environment:
+      - POSTGRES_DB=postgres_db
+      - POSTGRES_USER=postgres_user
+      - POSTGRES_PASSWORD=postgres_password
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=strongpassword
+      - JWT_SECRET_KEY=2e4f746042bfe1d5d6a3d8f877696f45c5ad0ebc8dc76d75e80f35ed167420b1
+    networks:
+      - db-network
+
+  lab3:
+    image: lab3
+    build:
+      context: ./lab3
+    ports:
+      - "5003:5003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      - POSTGRES_DB=postgres_db
+      - POSTGRES_USER=postgres_user
+      - POSTGRES_PASSWORD=postgres_password
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=strongpassword
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET_KEY=2e4f746042bfe1d5d6a3d8f877696f45c5ad0ebc8dc76d75e80f35ed167420b1
     networks:
       - db-network
 
@@ -20,7 +77,12 @@ services:
     # volumes:
     #   - ./redis_data:/data
     ports:
-      - '6379:6379'
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - db-network
 
@@ -42,25 +104,26 @@ services:
     environment:
       - NEO4J_AUTH=neo4j/strongpassword
     ports:
-      - '7474:7474'
-      - '7687:7687'
+      - "7474:7474"
+      - "7687:7687"
     # volumes:
     #   - ./neo4j_data:/data
     #   - ./neo4j_logs:/logs
     #   - ./neo4j_import:/import
     healthcheck:
-      test: ['CMD', 'cypher-shell', '-u', 'neo4j', '-p', 'strongpassword', 'RETURN 1;']
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1"] # Проверка HTTP-порта
       interval: 10s
-      timeout: 5s
-      retries: 3
+      timeout: 10s
+      retries: 20
+      start_period: 40s # Время ожидания перед началом проверок
     networks:
       - db-network
 
   elasticsearch:
     image: elasticsearch:8.16.4
     ports:
-      - '9200:9200'
-      - '9300:9300'
+      - "9200:9200"
+      - "9300:9300"
     environment:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms1g -Xmx1g
@@ -80,14 +143,20 @@ services:
       POSTGRES_DB: postgres_db
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - '5430:5432'
+      - "5430:5432"
     volumes:
       # - ./pgdata:/var/lib/postgresql/data/pgdata
-      - ./postgres-init:/docker-entrypoint-initdb.d # Добавлено для инициализации
-    command: ['postgres', '-c', 'wal_level=logical'] # Включение логической репликации
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    command: ["postgres", "-c", "wal_level=logical"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres_user", "-d", "postgres_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - db-network
 
 networks:
   db-network:
-    external: true
+    # external: true  # Уберите или создайте вручную, если сеть не существует

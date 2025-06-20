@@ -1,5 +1,8 @@
 import psycopg2
 from pymongo import MongoClient
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from env import (DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT,
                  DB_USER, MONGO_URI, MONGO_DB_NAME, MONGO_USERNAME, MONGO_PASSWORD)
 

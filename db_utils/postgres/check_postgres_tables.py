@@ -1,6 +1,9 @@
 import psycopg2
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from env import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
-from .tables import TABLES
+from tables import TABLES
 
 
 def check_tables():
@@ -19,15 +22,34 @@ def check_tables():
         print("="*50 + "\n")
 
         for table in TABLES.keys():
-            cur.execute(f"SELECT COUNT(*) FROM {table}")
+            # Проверка существования таблицы
+            cur.execute("""
+                SELECT EXISTS (
+                    SELECT FROM pg_tables 
+                    WHERE schemaname = 'public' AND tablename = %s
+                )
+            """, (table.lower(),))
+            exists = cur.fetchone()[0]
+            if not exists:
+                print(f"\nТаблица: {table} - не существует")
+                print("-"*50 + "\n")
+                continue
+
+            # Получаем количество записей
+            cur.execute("SELECT COUNT(*) FROM %s", (psycopg2.extensions.AsIs(table),))
             count = cur.fetchone()[0]
 
-            cur.execute(f"""
+            # Получаем информацию о колонках
+            cur.execute("""
                 SELECT column_name, data_type 
                 FROM information_schema.columns 
-                WHERE table_name = '{table.lower()}'
-            """)
+                WHERE table_name = %s
+            """, (table.lower(),))
             columns = cur.fetchall()
+
+            # Получаем имена колонок для читаемого вывода
+            cur.execute("SELECT * FROM %s LIMIT 0", (psycopg2.extensions.AsIs(table),))
+            col_names = [desc[0] for desc in cur.description]
 
             print(f"\nТаблица: {table} (записей: {count})")
             print("-"*50)
@@ -36,12 +58,14 @@ def check_tables():
                 print(f"  {col[0]} ({col[1]})")
 
             if count > 0:
-                cur.execute(f"SELECT * FROM {table} LIMIT 3")
+                # Получаем первые 3 записи
+                cur.execute("SELECT * FROM %s LIMIT 3", (psycopg2.extensions.AsIs(table),))
                 rows = cur.fetchall()
 
                 print("\nПример данных:")
                 for row in rows:
-                    print("  ", row)
+                    row_data = dict(zip(col_names, row))
+                    print("  ", row_data)
             else:
                 print("\nТаблица пуста")
 

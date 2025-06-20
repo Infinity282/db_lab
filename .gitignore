@@ -8,4 +8,5 @@ mongodb_data
 postgres-init
 elastic_data
 __pycache__
+Microsoft
 /venv

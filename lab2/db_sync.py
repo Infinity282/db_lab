@@ -1,45 +1,53 @@
-# -*- coding: utf-8 -*-
-import psycopg2
 from neo4j import GraphDatabase
+import psycopg2
+from datetime import date
 import logging
-import os
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from env import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER, NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
 
-# Конфигурация логирования
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-PG_CONFIG = {
-    'dbname': DB_NAME,
-    'user': DB_USER,
-    'password': DB_PASSWORD,
-    'host': DB_HOST,
-    'port': DB_PORT,
-}
+logging.basicConfig(level=logging.INFO)
 
 class SyncService:
-    def __init__(self, pg_conf, neo4j_uri, neo4j_user, neo4j_password):
-        self.pg_conn = psycopg2.connect(**pg_conf)
-        self.neo_driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
+    def __init__(self, pg_config, neo4j_uri, neo4j_user, neo4j_password):
+        self.pg_conn = psycopg2.connect(**pg_config)
+        self.pg_cur = self.pg_conn.cursor()
+        self.neo4j_driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
 
     def close(self):
+        self.pg_cur.close()
         self.pg_conn.close()
-        self.neo_driver.close()
+        self.neo4j_driver.close()
 
-    def fetch_all(self, query, params=None):
-        with self.pg_conn.cursor() as cur:
-            cur.execute(query, params)
-            cols = [desc[0] for desc in cur.description]
-            for row in cur.fetchall():
-                yield dict(zip(cols, row))
+    def _calculate_semester_dates(self, year: int, semester: int):
+        logger.info(f"Calculating semester dates for year={year}, semester={semester}")
+        if semester not in [1, 2]:
+            raise ValueError("Semester must be 1 or 2")
+        if semester == 1:
+            start = date(year, 9, 1)
+            end = date(year, 12, 31)
+        else:
+            start = date(year, 2, 1)
+            end = date(year, 6, 30)
+        return start, end
 
-    def clear_neo4j(self):
-        logger.info("Clearing Neo4j database")
-        with self.neo_driver.session() as session:
-            session.run("MATCH (n) DETACH DELETE n")
-        logger.info("Neo4j database cleared")
+    def generate_audience_report(self, year: int, semester: int):
+        logger.info(f"Generating audience report for year={year}, semester={semester}")
+        start_date, end_date = self._calculate_semester_dates(year, semester)
+        params = {'start': str(start_date), 'end': str(end_date)}
+        cypher_query = '''
+        MATCH (sch:Schedule)
+        WHERE date(sch.scheduled_date) >= date($start) AND date(sch.scheduled_date) <= date($end)
+        MATCH (sch)-[:FOR_GROUP]->(g:Student_Group)-[:HAS_STUDENT]->(s:Student)
+        WITH sch, COUNT(DISTINCT s) AS total_students
+        MATCH (c:Course_of_classes)-[:SCHEDULED_AS]->(sch)
+        RETURN c.name AS course_name, sch.room AS room_name, 
+               c.tech_requirements AS tech_requirements, total_students AS total_students
+        ORDER BY course_name
+        '''
+        with self.neo4j_driver.session() as session:
+            results = session.run(cypher_query, **params)
+            report = [dict(record) for record in results]
+            logger.info(f"Generated report with {len(report)} entries")
+            return report
 
     def sync_course_of_classes(self):
         logger.info("Starting sync_course_of_classes")
@@ -51,11 +59,11 @@ class SyncService:
             c.department_id = row.department_id, c.specialty_id = row.specialty_id
         '''
         rows = list(self.fetch_all("""
-            SELECT id, name, description, tech_requirements, department_id, specialty_id 
+            SELECT id, department_id, specialty_id, name, description, tech_requirements 
             FROM Course_of_classes
         """))
         logger.info(f"Fetched {len(rows)} course_of_classes rows")
-        with self.neo_driver.session() as session:
+        with self.neo4j_driver.session() as session:
             session.run(cypher, rows=rows)
         logger.info("Completed sync_course_of_classes")
 
@@ -72,7 +80,7 @@ class SyncService:
             FROM Student_Groups
         """))
         logger.info(f"Fetched {len(rows)} student_group rows")
-        with self.neo_driver.session() as session:
+        with self.neo4j_driver.session() as session:
             session.run(cypher, rows=rows)
         logger.info("Completed sync_student_groups")
 
@@ -86,11 +94,11 @@ class SyncService:
         MERGE (c)-[:HAS_CLASS]->(cl)
         '''
         rows = list(self.fetch_all("""
-            SELECT id, course_of_class_id, name, type
+            SELECT id, course_of_class_id, name, type 
             FROM Class
         """))
         logger.info(f"Fetched {len(rows)} class rows")
-        with self.neo_driver.session() as session:
+        with self.neo4j_driver.session() as session:
             session.run(cypher, rows=rows)
         logger.info("Completed sync_classes")
 
@@ -110,7 +118,7 @@ class SyncService:
             FROM Students
         """))
         logger.info(f"Fetched {len(rows)} student rows")
-        with self.neo_driver.session() as session:
+        with self.neo4j_driver.session() as session:
             session.run(cypher, rows=rows)
         logger.info("Completed sync_students")
 
@@ -128,11 +136,11 @@ class SyncService:
         '''
         rows = list(self.fetch_all("""
             SELECT id, group_id, course_of_class_id, room, scheduled_date::text, 
-                start_time::text, end_time::text
+                   start_time::text, end_time::text
             FROM Schedule
         """))
         logger.info(f"Fetched {len(rows)} schedule rows")
-        with self.neo_driver.session() as session:
+        with self.neo4j_driver.session() as session:
             session.run(cypher, rows=rows)
         logger.info("Completed sync_schedule")
 
@@ -148,11 +156,11 @@ class SyncService:
         MERGE (a)-[:FOR_SCHEDULE]->(sch)
         '''
         rows = list(self.fetch_all("""
-            SELECT a.id, a.student_id, a.schedule_id, a.attended, a.absence_reason
-            FROM Attendance a
+            SELECT id, student_id, schedule_id, attended, absence_reason 
+            FROM Attendance
         """))
         logger.info(f"Fetched {len(rows)} attendance rows")
-        with self.neo_driver.session() as session:
+        with self.neo4j_driver.session() as session:
             session.run(cypher, rows=rows)
         logger.info("Completed sync_attendance")
 
@@ -166,20 +174,26 @@ class SyncService:
         MERGE (cl)-[:HAS]->(m)
         '''
         rows = list(self.fetch_all("""
-            SELECT 
-                id, 
-                class_id, 
-                (content::json->>'file_path') AS file_path, 
-                (content::json->>'uploaded_at') AS uploaded_at
+            SELECT id, class_id, (content->>'file_path') AS file_path, (content->>'uploaded_at') AS uploaded_at
             FROM Class_Materials
         """))
         logger.info(f"Fetched {len(rows)} class_materials rows")
-        with self.neo_driver.session() as session:
+        with self.neo4j_driver.session() as session:
             session.run(cypher, rows=rows)
         logger.info("Completed sync_class_materials")
 
-    def run_all(self):
-        self.clear_neo4j()
+    def fetch_all(self, query, params=None):
+        """Fetch all rows from a PostgreSQL query and return as a list of dictionaries."""
+        with self.pg_conn.cursor() as cur:
+            cur.execute(query, params)
+            columns = [desc[0] for desc in cur.description]
+            return [dict(zip(columns, row)) for row in cur.fetchall()]
+
+    def sync_data(self):
+        logger.info("Clearing Neo4j database")
+        with self.neo4j_driver.session() as session:
+            session.run("MATCH (n) DETACH DELETE n")
+        logger.info("Neo4j database cleared")
         self.sync_course_of_classes()
         self.sync_student_groups()
         self.sync_classes()
@@ -187,11 +201,4 @@ class SyncService:
         self.sync_schedule()
         self.sync_attendance()
         self.sync_class_materials()
-        logger.info("Синхронизация завершена.")
-
-if __name__ == '__main__':
-    service = SyncService(PG_CONFIG, NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
-    try:
-        service.run_all()
-    finally:
-        service.close()
+        logger.info("Data synchronization completed.")
