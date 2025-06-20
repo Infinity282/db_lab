@@ -106,24 +106,22 @@ class RedisStudentSynchronizer:
             student_key = f"student:{student_id}"
             mapping = {
                 'id': student_id,
-                'group_id': group_id or '',
+                'group_id': group_id,
                 'name': name,
-                'enrollment_year': enrollment_year or '',
-                'date_of_birth': str(date_of_birth) if date_of_birth else '',
-                'email': email or '',
-                'book_number': book_number or ''
+                'enrollment_year': enrollment_year,
+                'date_of_birth': str(date_of_birth),
+                'email': email,
+                'book_number': book_number
             }
-            # Удаление None значений
-            mapping = {k: v for k, v in mapping.items() if v is not None}
-
             self.redis_client.hset(student_key, mapping=mapping)
 
             # Создание индексов
             self.redis_client.sadd(
                 f"index:student:name:{name.lower()}", student_id)
-            if email:
-                self.redis_client.sadd(
-                    f"index:student:email:{email.lower()}", student_id)
+            self.redis_client.sadd(
+                f"index:student:email:{email.lower()}", student_id)
+            self.redis_client.sadd(
+                f"index:student:book_number:{book_number.lower()}", student_id)
 
     def run_sync(self) -> bool:
         """Основной метод выполнения синхронизации"""
