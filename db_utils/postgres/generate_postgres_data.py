@@ -37,8 +37,8 @@ def insert_institutes(cur):
     print("Добавление институтов")
     for inst in INSTITUTES:
         cur.execute(
-            "INSERT INTO Institutes (university_id, name) VALUES (%s, %s)",
-            (inst[1], inst[0])
+            "INSERT INTO Institutes (name, university_id) VALUES (%s, %s)",
+            (inst[0], inst[1])
         )
 
 def insert_departments(cur):
@@ -46,8 +46,8 @@ def insert_departments(cur):
     print("Добавление кафедр")
     for dep in DEPARTMENTS:
         cur.execute(
-            "INSERT INTO Departments (institute_id, name) VALUES (%s, %s)",
-            (dep[1], dep[0])
+            "INSERT INTO Departments (name, institute_id) VALUES (%s, %s)",
+            (dep[0], dep[1])
         )
 
 def insert_specialties(cur):
@@ -55,8 +55,8 @@ def insert_specialties(cur):
     print("Добавление специальностей")
     for special in SPECIALTIES:
         cur.execute(
-            "INSERT INTO Specialties (name) VALUES (%s)",
-            (special[0],)
+            "INSERT INTO Specialties (code, name) VALUES (%s, %s)",
+            (special[0], special[1])
         )
 
 def insert_student_groups(cur):
@@ -67,7 +67,7 @@ def insert_student_groups(cur):
             """
             INSERT INTO Student_Groups (department_id, specialty_id, name, course_year)
             VALUES (%s, %s, %s, %s)
-            """, (group[1], group[3], group[0], group[2])
+            """, (group[0], group[1], group[2], group[3])
         )
 
 def insert_course_of_classes(cur):
@@ -76,9 +76,9 @@ def insert_course_of_classes(cur):
     for course in COURSES:
         cur.execute(
             """
-            INSERT INTO Course_of_classes (department_id, specialty_id, name, description, tech_requirements)
+            INSERT INTO Course_of_classes (name, department_id, specialty_id, description, tech_requirements)
             VALUES (%s, %s, %s, %s, %s)
-            """, (course[1], course[2], course[0], course[3], course[4])
+            """, (course[0], course[1], course[2], course[3], course[4])
         )
 
 def insert_and_generate_students(cur):
@@ -109,7 +109,7 @@ def insert_and_generate_students(cur):
                 book_number = f"{str(enrollment_year)[-2:]}{group_name[0:1].upper()}{random.randint(1000, 9999):04d}"
                 cur.execute(
                     """
-                    INSERT INTO Students (student_group_id, name, book_number, enrollment_year, date_of_birth, email)
+                    INSERT INTO Students (group_id, name, book_number, enrollment_year, date_of_birth, email)
                     VALUES (%s, %s, %s, %s, %s, %s)
                     """, (group_id, name, book_number, enrollment_year, date_of_birth, email)
                 )

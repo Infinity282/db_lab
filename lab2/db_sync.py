@@ -183,11 +183,11 @@ class SyncService:
         logger.info("Completed sync_class_materials")
 
     def fetch_all(self, query, params=None):
+        """Fetch all rows from a PostgreSQL query and return as a list of dictionaries."""
         with self.pg_conn.cursor() as cur:
             cur.execute(query, params)
-            cols = [desc[0] for desc in cur.description]
-            for row in cur.fetchall():
-                yield dict(zip(cols, row))
+            columns = [desc[0] for desc in cur.description]
+            return [dict(zip(columns, row)) for row in cur.fetchall()]
 
     def sync_data(self):
         logger.info("Clearing Neo4j database")
@@ -201,4 +201,4 @@ class SyncService:
         self.sync_schedule()
         self.sync_attendance()
         self.sync_class_materials()
-        logger.info("Синхронизация завершена.")
+        logger.info("Data synchronization completed.")
