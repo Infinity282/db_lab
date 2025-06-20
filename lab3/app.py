@@ -57,7 +57,6 @@ def get_group_report():
     finally:
         service.close()
 
-# Пример эндпоинта для генерации JWT-токена (для тестирования)
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json(force=True)

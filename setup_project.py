@@ -1,21 +1,20 @@
 from time import sleep
-
-from sync.mongo import create_mongo
-from data_generator import seed_database
-from database_check_data import check_database_data_simple
-from clean_postgres import drop_tables
-from sync.redis import create_redis
-from sync.elastic import create_elastic
-from setup_postgre_tables import setup_tables
+from db_utils.postgres.drop_postgres_tables import drop_tables
+from db_utils.postgres.create_postgres_tables import create_tables
+from db_utils.postgres.generate_postgres_data import seed_database
+from db_utils.postgres.check_postgres_tables import check_tables
+from db_utils.elastic.sync_elastic_tables import sync_lecture_sessions
+from db_utils.mongo.sync_mongo_tables import sync_university_hierarchy
+from db_utils.redis.sync_redis_tables import sync_session_types_to_redis
 
 
 if __name__ == "__main__":
     drop_tables()
-    setup_tables()
+    create_tables()
     sleep(5)
     seed_database()
     sleep(5)
-    check_database_data_simple()
-    create_elastic.main()
-    create_mongo.main()
-    create_redis.main()
+    check_tables()
+    sync_lecture_sessions
+    sync_university_hierarchy()
+    sync_session_types_to_redis()

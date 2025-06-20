@@ -1,14 +1,9 @@
-import os
 from elasticsearch import Elasticsearch
 import psycopg2
 from typing import Dict, List
 import json
-
-DB_NAME = "postgres_db"
-DB_USER = "postgres_user"
-DB_PASSWORD = "postgres_password"
-DB_HOST = "localhost"
-DB_PORT = "5430"
+from env import (DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT,
+                 DB_USER)
 
 
 def sync_lecture_sessions(

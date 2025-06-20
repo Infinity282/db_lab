@@ -1,8 +1,12 @@
 import psycopg2
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from env import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
+from tables import TABLES
 
-def check_database_data_simple():
-    """Упрощенная версия проверки данных в базе данных"""
+
+def check_tables():
     conn = psycopg2.connect(
         dbname=DB_NAME,
         user=DB_USER,
@@ -13,19 +17,11 @@ def check_database_data_simple():
     cur = conn.cursor()
 
     try:
-        # Список таблиц (убрано Group_Courses, так как оно не используется)
-        tables = [
-            "Universities", "Institutes", "Departments",
-            "Specialties", "Course_of_lecture", "Student_Groups",
-            "Lecture", "Material_of_lecture", "Schedule",
-            "Students", "Attendance"
-        ]
-
         print("\n" + "="*50)
         print("ПРОВЕРКА ДАННЫХ В БАЗЕ ДАННЫХ")
         print("="*50 + "\n")
 
-        for table in tables:
+        for table in TABLES.keys():
             # Проверка существования таблицы
             cur.execute("""
                 SELECT EXISTS (
@@ -51,6 +47,10 @@ def check_database_data_simple():
             """, (table.lower(),))
             columns = cur.fetchall()
 
+            # Получаем имена колонок для читаемого вывода
+            cur.execute("SELECT * FROM %s LIMIT 0", (psycopg2.extensions.AsIs(table),))
+            col_names = [desc[0] for desc in cur.description]
+
             print(f"\nТаблица: {table} (записей: {count})")
             print("-"*50)
             print("Структура таблицы:")
@@ -58,10 +58,6 @@ def check_database_data_simple():
                 print(f"  {col[0]} ({col[1]})")
 
             if count > 0:
-                # Получаем имена колонок для читаемого вывода
-                cur.execute("SELECT * FROM %s LIMIT 0", (psycopg2.extensions.AsIs(table),))
-                col_names = [desc[0] for desc in cur.description]
-
                 # Получаем первые 3 записи
                 cur.execute("SELECT * FROM %s LIMIT 3", (psycopg2.extensions.AsIs(table),))
                 rows = cur.fetchall()
@@ -81,5 +77,6 @@ def check_database_data_simple():
         cur.close()
         conn.close()
 
+
 if __name__ == "__main__":
-    check_database_data_simple()
+    check_tables()

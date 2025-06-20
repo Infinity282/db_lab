@@ -3,8 +3,23 @@ from datetime import timedelta
 import random
 from datetime import datetime
 import psycopg2
-from consts import ATTENDANCE, COURSE_OF_LECTURE, DEPARTMENTS, INSTITUTES, LECTURE, MATERIAL_OF_LECTURE, SCHEDULE, SPECIALTIES, STUDENT_GROUPS, TEST_STUDENTS, TEST_SCHEDULE, TEST_ATTENDANCE, UNIVERSITIES
-from setup_postgre_tables import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
+from psycopg2.extras import Json
+from tables_data import (
+    ATTENDANCE,
+    COURSES,
+    DEPARTMENTS,
+    GROUP_COURSES,
+    INSTITUTES,
+    SCHEDULE,
+    SESSION_TYPES,
+    SPECIALTIES,
+    STUDENT_GROUPS,
+    TEST_STUDENTS,
+    TEST_SCHEDULE,
+    TEST_ATTENDANCE,
+    UNIVERSITIES
+)
+from create_postgres_tables import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
 USE_TEST_DATA = True
 
@@ -22,8 +37,8 @@ def insert_institutes(cur):
     print("Добавление институтов")
     for inst in INSTITUTES:
         cur.execute(
-            "INSERT INTO Institutes (university_id, name, dean) VALUES (%s, %s, %s)",
-            (inst[1], inst[0], None)
+            "INSERT INTO Institutes (university_id, name) VALUES (%s, %s)",
+            (inst[1], inst[0])
         )
 
 def insert_departments(cur):
@@ -31,17 +46,17 @@ def insert_departments(cur):
     print("Добавление кафедр")
     for dep in DEPARTMENTS:
         cur.execute(
-            "INSERT INTO Departments (institute_id, name, head) VALUES (%s, %s, %s)",
-            (dep[1], dep[0], None)
+            "INSERT INTO Departments (institute_id, name) VALUES (%s, %s)",
+            (dep[1], dep[0])
         )
 
 def insert_specialties(cur):
-    """Добавление специальностей (оставлено для совместимости)"""
+    """Добавление специальностей"""
     print("Добавление специальностей")
     for special in SPECIALTIES:
         cur.execute(
-            "INSERT INTO Specialties (code, name, description) VALUES (%s, %s, %s)",
-            special
+            "INSERT INTO Specialties (name) VALUES (%s)",
+            (special[0],)
         )
 
 def insert_student_groups(cur):
@@ -50,20 +65,20 @@ def insert_student_groups(cur):
     for group in STUDENT_GROUPS:
         cur.execute(
             """
-            INSERT INTO Student_Groups (department_id, name, course_year)
-            VALUES (%s, %s, %s)
-            """, (group[1], group[0], group[2])
+            INSERT INTO Student_Groups (department_id, specialty_id, name, course_year)
+            VALUES (%s, %s, %s, %s)
+            """, (group[1], group[3], group[0], group[2])
         )
 
-def insert_course_of_lecture(cur):
-    """Добавление курсов лекций"""
-    print("Добавление курсов лекций")
-    for course in COURSE_OF_LECTURE:
+def insert_course_of_classes(cur):
+    """Добавление курсов занятий"""
+    print("Добавление курсов занятий")
+    for course in COURSES:
         cur.execute(
             """
-            INSERT INTO Course_of_lecture (department_id, name, description, tech_requirements)
-            VALUES (%s, %s, %s, %s)
-            """, (course[1], course[0], course[2], course[3])  # Исправлен порядок
+            INSERT INTO Course_of_classes (department_id, specialty_id, name, description, tech_requirements)
+            VALUES (%s, %s, %s, %s, %s)
+            """, (course[1], course[2], course[0], course[3], course[4])
         )
 
 def insert_and_generate_students(cur):
@@ -73,7 +88,7 @@ def insert_and_generate_students(cur):
         for student in TEST_STUDENTS:
             cur.execute(
                 """
-                INSERT INTO Students (student_group_id, name, book_number, enrollment_year, date_of_birth, email)
+                INSERT INTO Students (group_id, name, book_number, enrollment_year, date_of_birth, email)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 """, student
             )
@@ -99,26 +114,26 @@ def insert_and_generate_students(cur):
                     """, (group_id, name, book_number, enrollment_year, date_of_birth, email)
                 )
 
-def insert_lectures(cur):
-    """Добавление лекций"""
-    print("Добавление лекций")
-    for lecture in LECTURE:
+def insert_classes(cur):
+    """Добавление занятий"""
+    print("Добавление занятий")
+    for session_type in SESSION_TYPES:
         cur.execute(
             """
-            INSERT INTO Lecture (course_id, topic, lecture_date, duration, tags)
-            VALUES (%s, %s, %s, %s, %s)
-            """, lecture
+            INSERT INTO Class (course_of_class_id, name, type)
+            VALUES (%s, %s, %s)
+            """, session_type
         )
 
-def insert_material_of_lecture(cur):
-    """Добавление материалов лекций"""
-    print("Добавление материалов лекций")
-    for material in MATERIAL_OF_LECTURE:
+def insert_class_materials(cur):
+    """Добавление материалов занятий"""
+    print("Добавление материалов занятий")
+    for material in GROUP_COURSES:
         cur.execute(
             """
-            INSERT INTO Material_of_lecture (lecture_id, file_path, uploaded_at)
-            VALUES (%s, %s, %s)
-            """, material
+            INSERT INTO Class_Materials (class_id, content)
+            VALUES (%s, %s)
+            """, (material[0], Json({"file_path": material[1], "uploaded_at": material[2]}))
         )
 
 def insert_schedule(cur):
@@ -128,7 +143,7 @@ def insert_schedule(cur):
     for schedule in schedule_data:
         cur.execute(
             """
-            INSERT INTO Schedule (student_group_id, lecture_id, room, scheduled_date, lecture_time, planned_hours)
+            INSERT INTO Schedule (group_id, course_of_class_id, room, scheduled_date, start_time, end_time)
             VALUES (%s, %s, %s, %s, %s, %s)
             """, schedule
         )
@@ -140,7 +155,7 @@ def insert_attendance(cur):
     for attendance in attendance_data:
         cur.execute(
             """
-            INSERT INTO Attendance (schedule_id, student_id, attended, attendance_date)
+            INSERT INTO Attendance (schedule_id, student_id, attended, absence_reason)
             VALUES (%s, %s, %s, %s)
             """, attendance
         )
@@ -162,10 +177,10 @@ def seed_database():
         insert_departments(cur)
         insert_specialties(cur)
         insert_student_groups(cur)
-        insert_course_of_lecture(cur)
+        insert_course_of_classes(cur)
         insert_and_generate_students(cur)
-        insert_lectures(cur)
-        insert_material_of_lecture(cur)
+        insert_classes(cur)
+        insert_class_materials(cur)
         insert_schedule(cur)
         insert_attendance(cur)
 

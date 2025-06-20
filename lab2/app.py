@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, get_jwt
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt # get_jwt_identity
 from db_sync import SyncService
 from datetime import datetime
 import os
@@ -19,21 +19,34 @@ PG_CONFIG = {
     'dbname': os.getenv('POSTGRES_DB', 'postgres_db'),
     'user': os.getenv('POSTGRES_USER', 'postgres_user'),
     'password': os.getenv('POSTGRES_PASSWORD', 'postgres_password'),
-    'host': os.getenv('POSTGRES_HOST', 'localhost'),
+    'host': os.getenv('POSTGRES_HOST', 'postgres_container'),
     'port': os.getenv('POSTGRES_PORT', 5432),
 }
 
-NEO4J_URI = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
+NEO4J_URI = os.getenv('NEO4J_URI', 'bolt://neo4j:7687')
 NEO4J_USER = os.getenv('NEO4J_USER', 'neo4j')
 NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'strongpassword')
 
 # Инициализация сервиса синхронизации
 service = SyncService(PG_CONFIG, NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
 
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'healthy'}), 200
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json(force=True)
+    username = data.get('username')
+    password = data.get('password')
+    if username == 'admin' and password == 'admin123':
+        token = create_access_token(identity=username, additional_claims={'role': 'admin'})
+        return jsonify({'token': token}), 200
+    return jsonify({'error': 'Invalid credentials'}), 401
+
 @app.route('/api/lab2/audience_report', methods=['POST'])
 @jwt_required()
 def get_audience_report():
-    # Исправление: получение роли из claims через get_jwt()
     claims = get_jwt()
     if claims.get('role') != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
@@ -55,17 +68,6 @@ def get_audience_report():
         return jsonify({'error': 'Failed to generate audience report', 'details': str(e)}), 500
     finally:
         service.close()
-
-# Пример эндпоинта для генерации JWT-токена (для тестирования)
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.get_json(force=True)
-    username = data.get('username')
-    password = data.get('password')
-    if username == 'admin' and password == 'admin123':
-        token = create_access_token(identity=username, additional_claims={'role': 'admin'})
-        return jsonify({'token': token}), 200
-    return jsonify({'error': 'Invalid credentials'}), 401
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002, debug=False)
