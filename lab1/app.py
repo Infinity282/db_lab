@@ -46,11 +46,15 @@ def get_report_by_date_and_term():
     neo4j_tool = Neo4jTool(connect_uri='bolt://localhost:7687')
     schedules = neo4j_tool.find_lecture_schedules(
         class_ids=class_ids,
-        start_time=data['start_date'],
-        end_time=data['end_date']
+        start_date=data['start_date'],
+        end_date=data['end_date']
     )
 
-    print(schedules)
+    for schedule in schedules:
+        print(f"Лекция {schedule['class_id']} в аудитории {schedule['room']}")
+        print(f"Дата: {schedule['scheduled_date']}")
+        print(f"Время: {schedule['start_time']} - {schedule['end_time']}")
+        print("-" * 50)
 
     return jsonify(report=response_body), 200
 

@@ -1,25 +1,25 @@
 import psycopg2
 import logging
-import os
-from dotenv import load_dotenv
+from env import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
-load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class PostgresTool:
-    def __init__(self):
+    def __init__(self, pg_host=DB_HOST):
         self.conn = None
         self.connect()
+        self.pg_host = pg_host
 
     def connect(self):
         try:
             self.conn = psycopg2.connect(
-                dbname=os.getenv('PG_DB', 'education'),
-                user=os.getenv('PG_USER', 'postgres'),
-                password=os.getenv('PG_PASSWORD', 'password'),
-                host=os.getenv('PG_HOST', 'postgres'),
-                port=os.getenv('PG_PORT', 5432)
+                dbname=DB_NAME,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                host=self.pg_host,
+                port=DB_PORT
             )
             logger.info("Connected to PostgreSQL")
         except Exception as e:
@@ -51,7 +51,7 @@ class PostgresTool:
         except Exception as e:
             logger.error(f"Error fetching course lectures: {str(e)}")
             return []
-    
+
     def get_student_count(self, course_id):
         try:
             with self.conn.cursor() as cur:
@@ -65,11 +65,11 @@ class PostgresTool:
         except Exception as e:
             logger.error(f"Error fetching student count: {str(e)}")
             return 0
-    
+
     def close(self):
         if self.conn:
             self.conn.close()
             logger.info("PostgreSQL connection closed")
-    
+
     def __del__(self):
         self.close()

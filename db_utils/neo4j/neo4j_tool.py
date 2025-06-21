@@ -1,6 +1,7 @@
 import logging
 from neo4j import GraphDatabase
 from env import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+from datetime import datetime
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,7 +16,7 @@ class Neo4jTool:
         self.neo_driver = None
         self.connect_uri = connect_uri
 
-    def _get_connection(self, ):
+    def _get_connection(self):
         """Создает и возвращает новое соединение с Neo4j"""
         try:
             driver = GraphDatabase.driver(
@@ -31,28 +32,32 @@ class Neo4jTool:
             logger.error(f"Ошибка подключения к Neo4j: {e}")
             raise
 
-    def find_lecture_schedules(self, class_ids: list, start_time: str, end_time: str) -> list:
+    def find_lecture_schedules(self, class_ids: list, start_date: str, end_date: str) -> list:
         """
-        Поиск расписаний лекций для указанных Class ID в заданном временном интервале
+        Поиск расписаний лекций для указанных Class ID в заданном интервале дат
 
         :param class_ids: Список ID классов (лекций)
-        :param start_time: Начальное время в формате 'HH:MM:SS'
-        :param end_time: Конечное время в формате 'HH:MM:SS'
+        :param start_date: Начальная дата в формате 'YYYY-MM-DD'
+        :param end_date: Конечная дата в формате 'YYYY-MM-DD'
         :return: Список расписаний или пустой список при ошибке
         """
         try:
+            # Валидация формата дат
+            datetime.strptime(start_date, '%Y-%m-%d')
+            datetime.strptime(end_date, '%Y-%m-%d')
+
             self.neo_driver = self._get_connection()
 
             cypher = """
-                MATCH (c:Class)-[:FOR_CLASS]-(sch:Schedule)
+                MATCH (c:Class)<-[:FOR_CLASS]-(sch:Schedule)
                 WHERE
-                    c.id IN $class_ids
+                    c.postgres_id IN $class_ids
                     AND c.type = 'лекция'
-                    AND sch.start_time >= $start_time
-                    AND sch.end_time <= $end_time
+                    AND date(sch.scheduled_date) >= date($start_date)
+                    AND date(sch.scheduled_date) <= date($end_date)
                 RETURN
-                    sch.id AS id,
-                    c.id AS class_id,
+                    sch.postgres_id AS id,
+                    c.postgres_id AS class_id,
                     sch.room AS room,
                     sch.scheduled_date AS scheduled_date,
                     sch.start_time AS start_time,
@@ -64,14 +69,17 @@ class Neo4jTool:
                 result = session.run(
                     cypher,
                     class_ids=class_ids,
-                    start_time=start_time,
-                    end_time=end_time
+                    start_date=start_date,
+                    end_date=end_date
                 )
                 schedules = [dict(record) for record in result]
 
             logger.info(f"Найдено {len(schedules)} расписаний лекций")
             return schedules
 
+        except ValueError as ve:
+            logger.error(f"Некорректный формат даты: {ve}")
+            return []
         except Exception as e:
             logger.error(f"Ошибка при поиске расписаний: {e}")
             return []
@@ -84,11 +92,11 @@ class Neo4jTool:
 def main():
     tool = Neo4jTool()
 
-    # Пример использования
+    # Пример использования поиска по диапазону дат
     schedules = tool.find_lecture_schedules(
-        class_ids=[1, 2, 3],
-        start_time="09:00:00",
-        end_time="18:00:00"
+        class_ids=[1, 2, 3, 4, 5, 6],
+        start_date="2023-09-01",
+        end_date="2023-12-31",
     )
 
     for schedule in schedules:
