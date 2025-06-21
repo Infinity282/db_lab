@@ -10,15 +10,16 @@ logger = logging.getLogger(__name__)
 
 
 class Neo4jTool:
-    def __init__(self):
+    def __init__(self, connect_uri: str = NEO4J_URI):
         """Инициализация класса, но соединение пока не устанавливаем"""
         self.neo_driver = None
+        self.connect_uri = connect_uri
 
-    def _get_connection(self):
+    def _get_connection(self, ):
         """Создает и возвращает новое соединение с Neo4j"""
         try:
             driver = GraphDatabase.driver(
-                NEO4J_URI,
+                self.connect_uri,
                 auth=(NEO4J_USER, NEO4J_PASSWORD))
 
             # Проверяем соединение
@@ -45,13 +46,13 @@ class Neo4jTool:
             cypher = """
                 MATCH (c:Class)-[:FOR_CLASS]-(sch:Schedule)
                 WHERE
-                    c.postgres_id IN $class_ids
+                    c.id IN $class_ids
                     AND c.type = 'лекция'
                     AND sch.start_time >= $start_time
                     AND sch.end_time <= $end_time
                 RETURN
-                    sch.postgres_id AS id,
-                    c.postgres_id AS class_id,
+                    sch.id AS id,
+                    c.id AS class_id,
                     sch.room AS room,
                     sch.scheduled_date AS scheduled_date,
                     sch.start_time AS start_time,

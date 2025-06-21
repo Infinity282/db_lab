@@ -15,11 +15,11 @@ class ElasticTool:
         """Инициализация класса, но соединение пока не устанавливаем"""
         self.es_client = None
 
-    def _get_connection(self) -> Elasticsearch:
+    def _get_connection(self, host: str = ES_HOST) -> Elasticsearch:
         """Создает и возвращает новое соединение с Elasticsearch"""
         try:
             es_client = Elasticsearch(
-                hosts=[f"http://{ES_HOST}:{ES_PORT}"],
+                hosts=[f"http://{host}:{ES_PORT}"],
                 basic_auth=(ES_USER, ES_PASSWORD),
                 verify_certs=False
             )
@@ -30,7 +30,7 @@ class ElasticTool:
             logger.error(f"Ошибка подключения к Elasticsearch: {e}")
             raise
 
-    def search_materials_by_content(self, search_query: str) -> list:
+    def search_materials_by_content(self, search_query: str, host: str) -> list:
         """
         Поиск материалов, содержащих заданную строку в поле content.
         Соединение создается и закрывается автоматически при каждом вызове.
@@ -40,7 +40,7 @@ class ElasticTool:
         :return: Список найденных материалов или пустой список при ошибке
         """
         try:
-            self.es_client = self._get_connection()
+            self.es_client = self._get_connection(host=host)
 
             search_body = {
                 "query": {
