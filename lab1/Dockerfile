@@ -2,17 +2,13 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-COPY const.py .
+COPY ../db_utils ./db_utils
 
-COPY lecture_session.py .
+COPY lab1/app.py .
 
-COPY session_type_search.py .
+COPY lab1/utils.py .
 
-COPY app.py .
-
-COPY lab.py .
-
-COPY requirements.txt .
+COPY lab1/requirements.txt .
 
 RUN pip install -r requirements.txt
 

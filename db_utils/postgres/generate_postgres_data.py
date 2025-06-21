@@ -38,11 +38,9 @@ def insert_data_from_dict(cur, table_name, data):
         print(f"Таблица {table_name} не найдена в определении TABLES")
         return
 
-    # Получаем структуру таблицы
     table_def = TABLES[table_name]
     columns = parse_table_structure(table_def)
 
-    # Генерируем и выполняем запросы
     query = generate_insert_query(table_name, columns)
 
     for row in data:

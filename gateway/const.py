@@ -1,1 +1,1 @@
-HARDCODED_USER = {'username': 'user', 'password': 'user'}
+USER_DATA = {'username': 'vlad', 'password': 'supersecret'}
