@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 from db_utils.elastic.elastic_tool import ElasticTool
 from db_utils.neo4j.neo4j_tool import Neo4jTool
+from db_utils.postgres.postgres_tool import PostgresTool
+from db_utils.redis.redis_tool import RedisTool
 from utils import has_all_required_fields
 
 app = Flask(__name__)
@@ -22,8 +24,7 @@ def get_report_by_date_and_term():
     response_body = {
         'search_term': data['material'],
         'period': f"{data['start_date']} - {data['end_date']}",
-        'found_lectures': '',
-        'worst_attendees': ''
+        'worst_attendees': []
     }
 
     elastic_tool = ElasticTool()
@@ -50,11 +51,41 @@ def get_report_by_date_and_term():
         end_date=data['end_date']
     )
 
+    # Если schedules нет
+    if not schedules:
+        return jsonify(report=response_body), 200
+
+    schedules_id = []
     for schedule in schedules:
+        schedules_id.append(schedule['id'])
         print(f"Лекция {schedule['class_id']} в аудитории {schedule['room']}")
         print(f"Дата: {schedule['scheduled_date']}")
         print(f"Время: {schedule['start_time']} - {schedule['end_time']}")
         print("-" * 50)
+
+    postgres_tool = PostgresTool()
+    students = postgres_tool.get_students_with_lowest_attendance(
+        schedule_ids=schedules_id)
+
+    # Если schedules нет
+    if not students:
+        return jsonify(report=response_body), 200
+
+    redis_tool = RedisTool()
+    for student in students:
+        full_student_info = redis_tool.get_student_info(
+            student_id=student['student_id'])
+        student_info = {
+            'student_id': student['student_id'],
+            'name': full_student_info['name'],
+            'group_id': full_student_info['group_id'],
+            'book_number': full_student_info['book_number'],
+            'missed_lectures': student['missed_count'],
+            'total_lectures': student['total_lectures'],
+            'attendance_percent': student['attendance_percent']
+        }
+        response_body['worst_attendees'].append(student_info)
+        print(student)
 
     return jsonify(report=response_body), 200
 
