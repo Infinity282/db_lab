@@ -9,8 +9,9 @@ logger = logging.getLogger(__name__)
 class PostgresTool:
     def __init__(self, pg_host=DB_HOST):
         self.conn = None
-        self.connect()
         self.pg_host = pg_host
+
+        self.connect()
 
     def connect(self):
         try:
