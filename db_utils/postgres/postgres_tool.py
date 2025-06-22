@@ -11,9 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 class PostgresTool:
-    def __init__(self, pg_host=DB_HOST):
+    def __init__(self, host=DB_HOST):
         self.conn = None
-        self.pg_host = pg_host
+        self.host = host
 
         self.connect()
 
@@ -23,7 +23,7 @@ class PostgresTool:
                 dbname=DB_NAME,
                 user=DB_USER,
                 password=DB_PASSWORD,
-                host=self.pg_host,
+                host=self.host,
                 port=DB_PORT
             )
             logger.info("Connected to PostgreSQL")

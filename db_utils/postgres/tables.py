@@ -53,8 +53,7 @@ TABLES = {
                 department_id INTEGER REFERENCES Departments(id),
                 specialty_id INTEGER REFERENCES Specialties(id),
                 name VARCHAR(255) NOT NULL,
-                description TEXT,
-                tech_requirements TEXT
+                description TEXT
             )
         """,
     "Class": """
@@ -63,7 +62,8 @@ TABLES = {
                 name VARCHAR(100) NOT NULL,
                 course_of_class_id INTEGER REFERENCES Course_of_classes(id),
                 tags TEXT,
-                type VARCHAR(50) NOT NULL
+                type VARCHAR(50) NOT NULL,
+                tech_requirements TEXT
             )
         """,
     "Class_Materials": """
@@ -88,8 +88,7 @@ TABLES = {
             (
                 id SERIAL PRIMARY KEY,
                 schedule_id INTEGER REFERENCES Schedule(id),
-                student_id INTEGER REFERENCES Students(id),
-                attended BOOLEAN NOT NULL
+                student_id INTEGER REFERENCES Students(id)
             )
         """
 }

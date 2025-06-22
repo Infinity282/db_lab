@@ -84,8 +84,7 @@ class Neo4jSynchronizer:
         SET c.name = row.name,
             c.description = row.description,
             c.department_id = row.department_id,
-            c.specialty_id = row.specialty_id,
-            c.tech_requirements = row.tech_requirements
+            c.specialty_id = row.specialty_id
         """
         rows = self.fetch_data("""
             SELECT
@@ -93,8 +92,7 @@ class Neo4jSynchronizer:
                 department_id,
                 specialty_id,
                 name,
-                description,
-                tech_requirements
+                description
             FROM Course_of_classes
         """)
         self.stats['courses'] = len(rows)
@@ -123,7 +121,8 @@ class Neo4jSynchronizer:
         MERGE (cls:Class {postgres_id: row.id})
         SET cls.name = row.name,
             cls.tags = row.tags,
-            cls.type = row.type
+            cls.type = row.type,
+            cls.tech_requirements = row.tech_requirements
             
         // Связь с курсом
         WITH cls, row
@@ -136,7 +135,8 @@ class Neo4jSynchronizer:
                 name, 
                 course_of_class_id, 
                 tags, 
-                type 
+                type,
+                tech_requirements         
             FROM Class
         """)
         self.stats['classes'] = len(rows)

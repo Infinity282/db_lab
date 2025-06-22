@@ -27,7 +27,8 @@ def get_report_by_date_and_term():
         'worst_attendees': []
     }
 
-    elastic_tool = ElasticTool()
+    # Elastic
+    elastic_tool = ElasticTool(host='elasticsearch')
     materials = elastic_tool.search_materials_by_content(
         data['material'], host='localhost')
 
@@ -44,7 +45,8 @@ def get_report_by_date_and_term():
         print(f"Content snippet: {material['content'][:100]}...")
         print("-" * 50)
 
-    neo4j_tool = Neo4jTool(connect_uri='bolt://localhost:7687')
+    # Neo4j
+    neo4j_tool = Neo4jTool(host='bolt://neo4j:7687')
     schedules = neo4j_tool.find_lecture_schedules(
         class_ids=class_ids,
         start_date=data['start_date'],
@@ -63,7 +65,8 @@ def get_report_by_date_and_term():
         print(f"Время: {schedule['start_time']} - {schedule['end_time']}")
         print("-" * 50)
 
-    postgres_tool = PostgresTool()
+    # Postgres
+    postgres_tool = PostgresTool(host='postgres')
     students = postgres_tool.get_students_with_lowest_attendance(
         schedule_ids=schedules_id)
 
@@ -71,7 +74,8 @@ def get_report_by_date_and_term():
     if not students:
         return jsonify(report=response_body), 200
 
-    redis_tool = RedisTool()
+    # Redis
+    redis_tool = RedisTool(host='redis')
     for student in students:
         full_student_info = redis_tool.get_student_info(
             student_id=student['student_id'])

@@ -11,15 +11,16 @@ logger = logging.getLogger(__name__)
 
 
 class ElasticTool:
-    def __init__(self):
+    def __init__(self, host: str = ES_HOST):
         """Инициализация класса, но соединение пока не устанавливаем"""
         self.es_client = None
+        self.host = host
 
-    def _get_connection(self, host: str = ES_HOST) -> Elasticsearch:
+    def _get_connection(self) -> Elasticsearch:
         """Создает и возвращает новое соединение с Elasticsearch"""
         try:
             es_client = Elasticsearch(
-                hosts=[f"http://{host}:{ES_PORT}"],
+                hosts=[f"http://{self.host}:{ES_PORT}"],
                 basic_auth=(ES_USER, ES_PASSWORD),
                 verify_certs=False
             )
@@ -40,7 +41,7 @@ class ElasticTool:
         :return: Список найденных материалов или пустой список при ошибке
         """
         try:
-            self.es_client = self._get_connection(host=host)
+            self.es_client = self._get_connection()
 
             search_body = {
                 "query": {

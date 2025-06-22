@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class Neo4jTool:
-    def __init__(self, connect_uri: str = NEO4J_URI):
+    def __init__(self, host: str = NEO4J_URI):
         """Инициализация класса, но соединение пока не устанавливаем"""
         self.neo_driver = None
-        self.connect_uri = connect_uri
+        self.connect_uri = host
 
     def _get_connection(self):
         """Создает и возвращает новое соединение с Neo4j"""
