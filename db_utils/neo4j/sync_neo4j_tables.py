@@ -250,8 +250,10 @@ class Neo4jSynchronizer:
         SET sch.room = row.room,
             sch.scheduled_date = row.scheduled_date,
             sch.start_time = row.start_time,
-            sch.end_time = row.end_time
-            
+            sch.end_time = row.end_time,
+            sch.group_id = row.group_id,
+            sch.class_id = row.class_id
+        
         // Связь с группой
         WITH sch, row
         MATCH (g:StudentGroup {postgres_id: row.group_id})
@@ -268,9 +270,9 @@ class Neo4jSynchronizer:
                 group_id, 
                 class_id, 
                 room, 
-                scheduled_date, 
-                start_time, 
-                end_time 
+                scheduled_date::text,  -- Преобразуем дату в строку
+                start_time::text,      -- Преобразуем время в строку
+                end_time::text         -- Преобразуем время в строку
             FROM Schedule
         """)
         self.stats['schedules'] = len(rows)

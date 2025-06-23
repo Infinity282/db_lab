@@ -82,19 +82,21 @@ class RedisTool:
             return None
 
     def set_student_info(self, student_id: int, student_data: dict):
-        """
-        Сохраняет информацию о студенте в Redis
-
-        :param student_id: ID студента
-        :param student_data: Словарь с данными студента
-        """
         try:
-            self.client.hset(f"student:{student_id}")
+            key = f"student:{student_id}"
+            self.client.hset(key, mapping={
+                'id': str(student_id),
+                'group_id': str(student_data.get('group_id', 0)),
+                'name': student_data.get('name', ''),
+                'enrollment_year': str(student_data.get('enrollment_year', 0)),
+                'date_of_birth': student_data.get('date_of_birth', ''),
+                'email': student_data.get('email', ''),
+                'book_number': student_data.get('book_number', '')
+            })
+            self.client.expire(key, 3600)  # Set 1-hour TTL
             logger.info(f"Данные студента {student_id} сохранены в Redis")
-
         except Exception as e:
-            logger.error(
-                f"Ошибка при сохранении данных студента {student_id}: {str(e)}")
+            logger.error(f"Ошибка при сохранении данных студента {student_id}: {str(e)}")
 
     def close(self):
         if self.client:

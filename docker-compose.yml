@@ -5,6 +5,7 @@ services:
       - '3001:3001'
     environment:
       - LAB1_URL=http://lab1:5001
+      - LAB2_URL=http://lab2:5002  # Добавлено для lab2
     networks:
       - db-network
 
@@ -12,6 +13,13 @@ services:
     image: lab1
     ports:
       - '5001:5001'
+    networks:
+      - db-network
+
+  lab2:
+    image: lab2
+    ports:
+      - '5002:5002'  # Новый порт для lab2
     networks:
       - db-network
 
@@ -80,7 +88,7 @@ services:
       POSTGRES_DB: postgres_db
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - '5430:5430'
+      - '5432:5432'
     volumes:
       # - ./pgdata:/var/lib/postgresql/data/pgdata
       - ./postgres-init:/docker-entrypoint-initdb.d

@@ -8,7 +8,6 @@ app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'super-secret-key')
 jwt = JWTManager(app)
 
-
 @app.route('/api/token', methods=['POST'])
 def get_token():
     data = request.get_json(force=True)
@@ -17,18 +16,35 @@ def get_token():
     token = create_access_token(identity=data['username'])
     return jsonify(access_token=token), 200
 
-
 @app.route('/api/lab1/report', methods=['POST'])
 @jwt_required()
 def proxy_lab1():
-    base_url = os.getenv(f'LAB1_URL')
-    resp = requests.post(
-        f"{base_url}/api/lab1/report",
-        json=request.get_json(force=True),
-        headers={'Content-Type': 'application/json'}
-    )
-    return jsonify(resp.json()), resp.status_code
+    base_url = os.getenv('LAB1_URL')
+    try:
+        resp = requests.post(
+            f"{base_url}/api/lab1/report",
+            json=request.get_json(force=True),
+            headers={'Content-Type': 'application/json'}
+        )
+        resp.raise_for_status()
+        return jsonify(resp.json()), resp.status_code
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Ошибка проксирования в lab1: {str(e)}'}), 500
 
+@app.route('/api/lab2/report', methods=['POST'])
+@jwt_required()
+def proxy_lab2():
+    base_url = os.getenv('LAB2_URL')
+    try:
+        resp = requests.post(
+            f"{base_url}/api/lab2/report",
+            json=request.get_json(force=True),
+            headers={'Content-Type': 'application/json'}
+        )
+        resp.raise_for_status()
+        return jsonify(resp.json()), resp.status_code
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Ошибка проксирования в lab2: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=3001)
