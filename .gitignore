@@ -9,3 +9,5 @@ postgres-init
 elastic_data
 __pycache__
 /venv
+Microsoft
+pip
