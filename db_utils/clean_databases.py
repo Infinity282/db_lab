@@ -277,7 +277,7 @@ if __name__ == "__main__":
             'user': 'postgres_user',
             'password': 'postgres_password',
             'host': 'localhost',
-            'port': 5430
+            'port': 5432
         },
         'mongo': {
             'host': 'localhost',

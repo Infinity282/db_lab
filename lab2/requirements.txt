@@ -1,0 +1,17 @@
+blinker==1.9.0
+certifi==2025.1.31
+click==8.1.8
+dnspython==2.7.0
+elastic-transport==8.17.1
+elasticsearch==8.17.2
+Flask==3.1.0
+itsdangerous==2.2.0
+Jinja2==3.1.6
+MarkupSafe==3.0.2
+neo4j==5.28.1
+psycopg2-binary
+pymongo==4.11.3
+pytz==2025.2
+redis==5.2.1
+urllib3==2.3.0
+Werkzeug==3.1.3
