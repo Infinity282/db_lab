@@ -1,8 +1,8 @@
 graph TD
-    Client["Клиент\nВеб-браузер"] -->|"HTTP(s) Запрос с JWT"| P1["API Gateway\nAPI Gateway Service"]
-    P1 -->|"Переадресованный HTTP(s) запрос"| P2["Lab1 Service\nDocker Container"]
-    P1 -->|"Переадресованный HTTP(s) запрос"| P3["Lab2 Service\nDocker Container"]
-    P1 -->|"Переадресованный HTTP(s) запрос"| P4["Lab3 Service\nDocker Container"]
+    Client["Клиент<br>Веб-браузер"] -->|"HTTP(s) Запрос с JWT"| P1["API Gateway<br>API Gateway Service"]
+    P1 -->|"Переадресованный HTTP(s) запрос"| P2["Lab1 Service<br>Docker Container"]
+    P1 -->|"Переадресованный HTTP(s) запрос"| P3["Lab2 Service<br>Docker Container"]
+    P1 -->|"Переадресованный HTTP(s) запрос"| P4["Lab3 Service<br>Docker Container"]
     P2 <-->|"Данные"| D1[(PostgreSQL)]
     P2 <-->|"Данные"| D2[(Elasticsearch)]
     P2 <-->|"Данные"| D3[(Neo4j)]

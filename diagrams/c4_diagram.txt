@@ -1,8 +1,8 @@
 graph TD
-    Client["Клиент\nВеб-браузер"] -->|"HTTP(s) Запрос с JWT"| APIGateway["API Gateway\nAPI Gateway Service"]
-    APIGateway -->|"HTTP(s) Запрос"| Lab1Service["Lab1 Service\nDocker Container"]
-    APIGateway -->|"HTTP(s) Запрос"| Lab2Service["Lab2 Service\nDocker Container"]
-    APIGateway -->|"HTTP(s) Запрос"| Lab3Service["Lab3 Service\nDocker Container"]
+    Client["Клиент<br>Веб-браузер"] -->|"HTTP(s) Запрос с JWT"| APIGateway["API Gateway<br>API Gateway Service"]
+    APIGateway -->|"HTTP(s) Запрос"| Lab1Service["Lab1 Service<br>Docker Container"]
+    APIGateway -->|"HTTP(s) Запрос"| Lab2Service["Lab2 Service<br>Docker Container"]
+    APIGateway -->|"HTTP(s) Запрос"| Lab3Service["Lab3 Service<br>Docker Container"]
     Lab1Service <-->|"Чтение/Запись"| DataStore1[(PostgreSQL)]
     Lab1Service <-->|"Чтение/Запись"| DataStore2[(Elasticsearch)]
     Lab1Service <-->|"Чтение/Запись"| DataStore3[(Neo4j)]
