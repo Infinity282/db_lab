@@ -11,9 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class PostgresTool:
-    def __init__(self, host=DB_HOST):
+    def __init__(self, host=DB_HOST, port=DB_PORT):
         self.conn = None
         self.host = host
+        self.port = port
 
         self.connect()
 
@@ -24,7 +25,7 @@ class PostgresTool:
                 user=DB_USER,
                 password=DB_PASSWORD,
                 host=self.host,
-                port=DB_PORT
+                port=self.port
             )
             logger.info("Connected to PostgreSQL")
         except Exception as e:
@@ -71,11 +72,12 @@ class PostgresTool:
             logger.error(f"Error fetching student count: {str(e)}")
             return 0
 
-    def get_students_with_lowest_attendance(self, schedule_ids: list, limit: int = 10) -> list:
+    def get_students_with_lowest_attendance(self, schedule_ids: list, students_ids: list, limit: int = 10) -> list:
         """
         Возвращает список студентов с информацией о посещаемости
 
         :param schedule_ids: Массив ID расписаний для анализа
+        :param students_ids: Массив ID расписаний для анализа
         :param limit: Количество возвращаемых студентов
         :return: Список словарей в формате [{
             'student_id': int, 
@@ -86,23 +88,28 @@ class PostgresTool:
         """
         try:
             with self.conn.cursor() as cur:
-                # Получаем студентов с низкой посещаемостью
                 attendance_query = """
-                SELECT student_id, SUM((attended)::int) AS missed_count, COUNT(*) AS total_lectures
-                FROM attendance
-                WHERE schedule_id = ANY(%s)
-                GROUP BY student_id
-                ORDER BY missed_count ASC
+                SELECT s.student_id, COALESCE((
+                    SELECT COUNT(*)
+                    FROM attendance a
+                    WHERE a.student_id = s.student_id AND schedule_id = ANY(%s)
+                ), 0) AS attendance_count
+                FROM unnest(%s) AS s(student_id)
+                GROUP BY s.student_id
+                ORDER BY attendance_count
                 LIMIT %s
                 """
-                cur.execute(attendance_query, (schedule_ids, limit))
+                cur.execute(attendance_query,
+                            (schedule_ids, students_ids, limit))
 
                 results = []
+                total_lectures = len(schedule_ids)
                 for row in cur.fetchall():
-                    student_id, missed_count, total_lectures = row
+                    student_id, attendance_count = row
+                    missed_count = total_lectures - attendance_count
                     attendance_percent = round(
-                        (missed_count / total_lectures) * 100, 2
-                    ) if total_lectures > 0 else 0
+                        (attendance_count / total_lectures) * 100, 2
+                    ) if len(schedule_ids) > 0 else 0
 
                     student_data = {
                         'student_id': student_id,

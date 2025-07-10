@@ -81,6 +81,45 @@ class RedisTool:
                 f"Ошибка при получении данных студента {student_id}: {str(e)}")
             return None
 
+    def get_student_info_by_group_id(self, group_id: int) -> list[int]:
+        """
+        Получает список ID студентов по ID группы
+
+        :param group_id: ID группы
+        :return: Список ID студентов или пустой список, если группа не найдена
+        """
+        try:
+            index_key = f"index:student:group_id:{group_id}"
+
+            if not self.client.exists(index_key):
+                logger.warning(f"Индекс группы {group_id} не найден в Redis")
+                return []
+
+            student_ids = self.client.smembers(index_key)
+
+            pipe = self.client.pipeline()
+            for sid in student_ids:
+                pipe.hgetall(f"student:{sid}")
+            students_data = pipe.execute()
+
+            result = []
+            for data in students_data:
+                if data:
+                    data["id"] = int(data["id"])
+                    data["group_id"] = int(data.get("group_id", 0))
+                    data["course_id"] = int(data.get("course_id", 0))
+                    result.append(data)
+
+            logger.info(f"Получены данные студента {group_id} из Redis")
+            logger.info(f"Студент: {result}")
+
+            return result
+
+        except Exception as e:
+            logger.error(
+                f"Ошибка при получении студентов группы {group_id}: {str(e)}")
+            return []
+
     def set_student_info(self, student_id: int, student_data: dict):
         """
         Сохраняет информацию о студенте в Redis

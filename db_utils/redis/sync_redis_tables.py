@@ -122,6 +122,8 @@ class RedisStudentSynchronizer:
                 f"index:student:email:{email.lower()}", student_id)
             self.redis_client.sadd(
                 f"index:student:book_number:{book_number.lower()}", student_id)
+            self.redis_client.sadd(
+                f"index:student:group_id:{group_id}", student_id)
 
     def run_sync(self) -> bool:
         """Основной метод выполнения синхронизации"""

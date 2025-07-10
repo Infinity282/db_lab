@@ -31,7 +31,7 @@ class ElasticTool:
             logger.error(f"Ошибка подключения к Elasticsearch: {e}")
             raise
 
-    def search_materials_by_content(self, search_query: str, host: str) -> list:
+    def search_materials_by_content(self, search_query: str) -> list:
         """
         Поиск материалов, содержащих заданную строку в поле content.
         Соединение создается и закрывается автоматически при каждом вызове.

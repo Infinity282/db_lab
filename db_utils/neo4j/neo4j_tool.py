@@ -49,7 +49,7 @@ class Neo4jTool:
             self.neo_driver = self._get_connection()
 
             cypher = """
-                MATCH (c:Class)<-[:FOR_CLASS]-(sch:Schedule)
+                MATCH (g:StudentGroup)-[:HAS_SCHEDULE]->(sch:Schedule)-[:FOR_CLASS]->(c:Class)
                 WHERE
                     c.postgres_id IN $class_ids
                     AND c.type = 'лекция'
@@ -59,6 +59,7 @@ class Neo4jTool:
                     sch.postgres_id AS id,
                     c.postgres_id AS class_id,
                     sch.room AS room,
+                    g.postgres_id AS group_id,
                     sch.scheduled_date AS scheduled_date,
                     sch.start_time AS start_time,
                     sch.end_time AS end_time
