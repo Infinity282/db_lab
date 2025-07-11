@@ -77,7 +77,7 @@ class PostgresTool:
         Возвращает список студентов с информацией о посещаемости
 
         :param schedule_ids: Массив ID расписаний для анализа
-        :param students_ids: Массив ID расписаний для анализа
+        :param students_ids: Массив ID студентов для анализа
         :param limit: Количество возвращаемых студентов
         :return: Список словарей в формате [{
             'student_id': int, 
@@ -95,8 +95,7 @@ class PostgresTool:
                     WHERE a.student_id = s.student_id AND schedule_id = ANY(%s)
                 ), 0) AS attendance_count
                 FROM unnest(%s) AS s(student_id)
-                GROUP BY s.student_id
-                ORDER BY attendance_count
+                ORDER BY attendance_count ASC, s.student_id ASC
                 LIMIT %s
                 """
                 cur.execute(attendance_query,

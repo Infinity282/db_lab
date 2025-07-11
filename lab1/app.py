@@ -57,13 +57,15 @@ def get_report_by_date_and_term():
         print('Нет расписаний')
         return jsonify(report=response_body), 200
 
-    schedules_info = []
+    schedule_ids = []
+    group_ids = set()
+
     for schedule in schedules:
         print(schedules)
-        schedules_info.append({
-            "schedule_id": schedule['id'],
-            "student_id": schedule['group_id']
-        })
+        schedule_ids.append(schedule['id'])
+        if schedule['group_id'] not in group_ids:
+            group_ids.add(schedule['group_id'])
+
         print(f"Лекция {schedule['class_id']} в аудитории {schedule['room']}")
         print(f"Группа {schedule['group_id']} в аудитории {schedule['room']}")
         print(f"Дата: {schedule['scheduled_date']}")
@@ -76,20 +78,20 @@ def get_report_by_date_and_term():
     students_ids = set()
     full_student_info = {}
 
-    for schedule_info in schedules_info:
+    for group_id in group_ids:
+        # Нет лишних запросов потому что group_id уникальны
         group_students = redis_tool.get_student_info_by_group_id(
-            group_id=schedule_info['student_id'])
+            group_id=group_id)
 
         for student_info in group_students:
             student_id = student_info['id']
 
-            if student_id not in students_ids:
-                full_student_info[student_id] = {
-                    'name': student_info['name'],
-                    'group_id': student_info['group_id'],
-                    'book_number': student_info['book_number']
-                }
-                students_ids.add(student_id)
+            full_student_info[student_id] = {
+                'name': student_info['name'],
+                'group_id': student_info['group_id'],
+                'book_number': student_info['book_number']
+            }
+            students_ids.add(student_id)
 
     if not students_ids:
         print('Нет студентов')
@@ -97,7 +99,7 @@ def get_report_by_date_and_term():
 
     # Postgres ищем топ 10 студентов
     postgres_tool = PostgresTool(host='localhost', port='5430')
-    schedule_ids = [item["schedule_id"] for item in schedules_info]
+
     students = postgres_tool.get_students_with_lowest_attendance(
         schedule_ids=schedule_ids, students_ids=list(students_ids))
 
