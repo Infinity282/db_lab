@@ -21,6 +21,7 @@ class PostgresTool:
         self.connect()
 
     def connect(self):
+        """Устанавливает соединение с PostgreSQL, используя параметры из env.py."""
         try:
             self.conn = psycopg2.connect(
                 dbname=DB_NAME,
@@ -37,7 +38,12 @@ class PostgresTool:
     # Оригинальные функции
     def get_course_lectures(self, course_id, semester, year):
         """
-        Получение лекций для конкретного курса.
+        Получает лекции для курса по указанным ID, семестру и году.
+        
+        :param course_id: ID курса.
+        :param semester: Номер семестра.
+        :param year: Год проведения курса.
+        :return: Список словарей с информацией о лекциях.
         """
         try:
             with self.conn.cursor() as cur:
@@ -66,7 +72,10 @@ class PostgresTool:
 
     def get_student_count(self, course_id):
         """
-        Подсчет количества студентов на курсе.
+        Подсчитывает количество студентов, записанных на курс.
+        
+        :param course_id: ID курса.
+        :return: Количество студентов (int).
         """
         try:
             with self.conn.cursor() as cur:
@@ -84,6 +93,16 @@ class PostgresTool:
     def get_students_with_lowest_attendance(self, schedule_ids: list, students_ids: list, limit: int = 10) -> list:
         """
         Возвращает список студентов с информацией о посещаемости.
+
+        :param schedule_ids: Массив ID расписаний для анализа.
+        :param students_ids: Массив ID студентов для анализа.
+        :param limit: Количество возвращаемых студентов.
+        :return: Список словарей в формате [{
+            'student_id': int, 
+            'missed_count': int,
+            'total_lectures': int,
+            'attendance_percent': float
+        }, ...]
         """
         try:
             with self.conn.cursor() as cur:
@@ -102,7 +121,7 @@ class PostgresTool:
                 total_lectures = len(schedule_ids)
                 for row in cur.fetchall():
                     student_id, attendance_count = row
-                    missed_count = total_lectures -attendance_count
+                    missed_count = total_lectures - attendance_count
                     attendance_percent = round(
                         (attendance_count / total_lectures) * 100, 2
                     ) if total_lectures > 0 else 0
@@ -118,7 +137,7 @@ class PostgresTool:
                         f"пропущено {missed_count} из {total_lectures} лекций "
                         f"({attendance_percent}% посещаемости)"
                     )
-                logger.info(f"Най omissionдено {len(results)} студентов с низкой посещаемостью")
+                logger.info(f"Найдено {len(results)} студентов с низкой посещаемостью")
                 return results
         except Exception as e:
             logger.error(f"Ошибка при анализе посещаемости: {str(e)}")
@@ -161,7 +180,7 @@ class PostgresTool:
 
     def get_student_count_lab2(self, course_id: int) -> int:
         """
-        Метод для Лабораторной работы №2: Подсчет количества студентов на курсе.
+        Метод для Лабораторной работы№2: Подсчет количества студентов на курсе.
         """
         try:
             with self.conn.cursor() as cur:
@@ -284,6 +303,7 @@ class PostgresTool:
             return []
 
     def close(self):
+        """Закрывает соединение с PostgreSQL."""
         if self.conn:
             self.conn.close()
             logger.info("PostgreSQL connection closed")

@@ -5,8 +5,8 @@ from db_utils.postgres.generate_postgres_data import insert_data
 from db_utils.postgres.check_postgres_tables import check_tables
 from db_utils.elastic.sync_elastic_tables import ElasticLectureSessionSynchronizer
 from db_utils.mongo.sync_mongo_tables import MongoSynchronizer
-from db_utils.redis.sync_redis_tables import RedisStudentSynchronizer
-from db_utils.neo4j.sync_neo4j_tables import Neo4jSynchronizer
+from db_utils.redis_utils.sync_redis_tables import RedisStudentSynchronizer
+from db_utils.neo4j_utils.sync_neo4j_tables import Neo4jSynchronizer
 
 if __name__ == "__main__":
     drop_tables()

@@ -1,11 +1,11 @@
 # Импорт Flask для создания веб-приложения
 from flask import Flask, request, jsonify
 # Импорт инструмента для работы с Neo4j
-from db_utils.neo4j.neo4j_tool import Neo4jTool
+from db_utils.neo4j_utils.neo4j_tool import Neo4jTool
 # Импорт инструмента для работы с PostgreSQL
 from db_utils.postgres.postgres_tool import PostgresTool
 # Импорт инструмента для работы с Redis
-from db_utils.redis.redis_tool import RedisTool
+from db_utils.redis_utils.redis_tool import RedisTool
 # Импорт утилиты для проверки наличия обязательных полей
 from utils import has_all_required_fields
 # Импорт типов для работы с датами и временем

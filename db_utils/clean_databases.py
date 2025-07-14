@@ -1,3 +1,10 @@
+from env import (
+    DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT,
+    MONGO_URI, MONGO_DB_NAME, MONGO_USERNAME, MONGO_PASSWORD,
+    REDIS_HOST, REDIS_PORT,
+    NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD,
+    ES_HOST, ES_PORT, ES_USER, ES_PASSWORD
+)
 import psycopg2
 from pymongo import MongoClient
 from neo4j import GraphDatabase
@@ -5,7 +12,7 @@ from elasticsearch import Elasticsearch
 import redis
 import logging
 
-# logging setup
+# Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
@@ -13,9 +20,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class DatabaseCleaner:
-    def __init__(self, config):
+    def __init__(self):
         """Инициализация подключений ко всем базам данных"""
-        self.config = config
         self.connections = {
             'postgres': None,
             'mongo': None,
@@ -30,69 +36,53 @@ class DatabaseCleaner:
             # PostgreSQL
             logger.info("Подключаемся к PostgreSQL...")
             self.connections['postgres'] = psycopg2.connect(
-                dbname=self.config['postgres']['dbname'],
-                user=self.config['postgres']['user'],
-                password=self.config['postgres']['password'],
-                host=self.config['postgres']['host'],
-                port=self.config['postgres']['port']
+                dbname=DB_NAME,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                host=DB_HOST,
+                port=DB_PORT
             )
             
             # MongoDB
             logger.info("Подключаемся к MongoDB...")
             mongo_auth = {}
-            if 'username' in self.config['mongo']:
-                mongo_auth['username'] = self.config['mongo']['username']
-            if 'password' in self.config['mongo']:
-                mongo_auth['password'] = self.config['mongo']['password']
-                
+            if MONGO_USERNAME:
+                mongo_auth['username'] = MONGO_USERNAME
+            if MONGO_PASSWORD:
+                mongo_auth['password'] = MONGO_PASSWORD
             self.connections['mongo'] = MongoClient(
-                host=self.config['mongo']['host'],
-                port=self.config['mongo']['port'],
+                MONGO_URI,
                 **mongo_auth
-            )[self.config['mongo']['dbname']]
+            )[MONGO_DB_NAME]
             
             # Neo4j
             logger.info("Подключаемся к Neo4j...")
             self.connections['neo4j'] = GraphDatabase.driver(
-                self.config['neo4j']['uri'],
-                auth=(
-                    self.config['neo4j']['user'],
-                    self.config['neo4j']['password']
-                )
+                NEO4J_URI,
+                auth=(NEO4J_USER, NEO4J_PASSWORD)
             )
             
             # ElasticSearch
             logger.info("Подключаемся к ElasticSearch...")
-            es_host = self.config['elastic']['host']
-            if not es_host.startswith(('http://', 'https://')):
-                es_host = f"http://{es_host}"
-                
-            es_auth = None
-            if 'user' in self.config['elastic'] and 'password' in self.config['elastic']:
-                es_auth = (
-                    self.config['elastic']['user'],
-                    self.config['elastic']['password']
-                )
-                
+            es_host = f"http://{ES_HOST}:{ES_PORT}" if not ES_HOST.startswith(('http://', 'https://')) else ES_HOST
+            es_auth = (ES_USER, ES_PASSWORD) if ES_USER and ES_PASSWORD else None
             self.connections['elastic'] = Elasticsearch(
                 hosts=[es_host],
-                http_auth=es_auth,
+                basic_auth=es_auth,
                 verify_certs=False  # Для разработки, в production следует использовать True
             )
-            
             if not self.connections['elastic'].ping():
                 raise ConnectionError("Не удалось подключиться к Elasticsearch")
             
             # Redis
             logger.info("Подключаемся к Redis...")
             redis_kwargs = {
-                'host': self.config['redis']['host'],
-                'port': self.config['redis']['port'],
-                'db': self.config['redis'].get('db', 0)
+                'host': REDIS_HOST,
+                'port': REDIS_PORT,
+                'db': 0
             }
-            if 'password' in self.config['redis']:
-                redis_kwargs['password'] = self.config['redis']['password']
-                
+            if 'REDIS_PASSWORD' in globals():
+                redis_kwargs['password'] = REDIS_PASSWORD
             self.connections['redis'] = redis.Redis(**redis_kwargs)
             self.connections['redis'].ping()  # Проверка подключения
             
@@ -269,40 +259,8 @@ class DatabaseCleaner:
             except Exception as e:
                 logger.error(f"Ошибка при закрытии соединения с {name}: {str(e)}")
 
-
 if __name__ == "__main__":
-    config = {
-        'postgres': {
-            'dbname': 'postgres_db',
-            'user': 'postgres_user',
-            'password': 'postgres_password',
-            'host': 'localhost',
-            'port': 5432
-        },
-        'mongo': {
-            'host': 'localhost',
-            'port': 27017,
-            'dbname': 'university_db',
-            'username': 'admin',
-            'password': 'secret'
-        },
-        'neo4j': {
-            'uri': 'bolt://localhost:7687',
-            'user': 'neo4j',
-            'password': 'strongpassword'
-        },
-        'elastic': {
-            'host': 'localhost:9200',
-            'user': 'elastic',
-            'password': 'secret'
-        },
-        'redis': {
-            'host': 'localhost',
-            'port': 6379
-        }
-    }
-
-    cleaner = DatabaseCleaner(config)
+    cleaner = DatabaseCleaner()
     if cleaner.clean_all_databases():
         logger.info("Очистка всех баз данных завершена успешно!")
     else:

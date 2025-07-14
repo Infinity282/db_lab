@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
 from db_utils.elastic.elastic_tool import ElasticTool
-from db_utils.neo4j.neo4j_tool import Neo4jTool
+from db_utils.neo4j_utils.neo4j_tool import Neo4jTool
 from db_utils.postgres.postgres_tool import PostgresTool
-from db_utils.redis.redis_tool import RedisTool
+from db_utils.redis_utils.redis_tool import RedisTool
 from utils import has_all_required_fields
 
 app = Flask(__name__)
