@@ -90,7 +90,7 @@ def get_classroom_requirements():
         redis_tool = RedisTool(host='redis')                    # Подключение к Redis
 
         # Получение данных о курсах и лекциях из PostgreSQL
-        course_lectures = postgres_tool.get_courses_lectures(
+        course_lectures = postgres_tool.get_courses_lectures_lab2(
             start_date=start_date,
             end_date=end_date
         )
@@ -137,7 +137,7 @@ def get_classroom_requirements():
             student_count = redis_tool.get_student_count(course_id)
             if student_count is None:
                 # Если в Redis нет данных, запрос к PostgreSQL
-                student_count = postgres_tool.get_student_count(course_id)
+                student_count = postgres_tool.get_student_count_lab2(course_id)
                 if student_count is not None:
                     # Сохранение результата в Redis для последующего использования
                     redis_tool.set_student_count(course_id, student_count)

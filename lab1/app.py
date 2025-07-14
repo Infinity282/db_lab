@@ -100,7 +100,7 @@ def get_report_by_date_and_term():
     # Postgres ищем топ 10 студентов
     postgres_tool = PostgresTool(host='localhost', port='5430')
 
-    students = postgres_tool.get_students_with_lowest_attendance(
+    students = postgres_tool.get_students_with_lowest_attendance_lab1(
         schedule_ids=schedule_ids, students_ids=list(students_ids))
 
     # Если нет худших студентов
