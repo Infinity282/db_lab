@@ -3,7 +3,6 @@ import logging
 from datetime import date
 from env import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
-# Настройка базовой конфигурации логирования
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
@@ -13,23 +12,15 @@ logger = logging.getLogger(__name__)
 class PostgresTool:
     """
     Класс для работы с базой данных PostgreSQL.
-    Содержит методы для подключения и выполнения запросов, необходимых для Лабораторных работ №1 и №2.
+    Содержит оригинальные методы и методы для Лабораторных работ №1 и №2.
     """
     def __init__(self, host=DB_HOST, port=DB_PORT):
-        """
-        Инициализация объекта PostgresTool.
-        :param host: Адрес хоста базы данных (по умолчанию из env.py).
-        :param port: Порт базы данных (по умолчанию из env.py).
-        """
         self.conn = None
         self.host = host
         self.port = port
         self.connect()
 
     def connect(self):
-        """
-        Устанавливает соединение с базой данных PostgreSQL с использованием параметров из env.py.
-        """
         try:
             self.conn = psycopg2.connect(
                 dbname=DB_NAME,
@@ -43,12 +34,100 @@ class PostgresTool:
             logger.error(f"PostgreSQL connection error: {str(e)}")
             raise
 
-    def get_courses_lectures(self, start_date: date, end_date: date) -> list:
+    # Оригинальные функции
+    def get_course_lectures(self, course_id, semester, year):
+        """
+        Получение лекций для конкретного курса.
+        """
+        try:
+            with self.conn.cursor() as cur:
+                query = """
+                SELECT
+                    c.id AS course_id,
+                    c.name AS course_name,
+                    l.id AS lecture_id,
+                    l.topic,
+                    l.date,
+                    l.duration
+                FROM courses c
+                JOIN lectures l ON c.id = l.course_id
+                WHERE
+                    c.id = %s
+                    AND c.semester = %s
+                    AND c.year = %s
+                """
+                cur.execute(query, (course_id, semester, year))
+                columns = [desc[0] for desc in cur.description]
+                results = [dict(zip(columns, row)) for row in cur.fetchall()]
+                return results
+        except Exception as e:
+            logger.error(f"Error fetching course lectures: {str(e)}")
+            return []
+
+    def get_student_count(self, course_id):
+        """
+        Подсчет количества студентов на курсе.
+        """
+        try:
+            with self.conn.cursor() as cur:
+                query = """
+                SELECT COUNT(*)
+                FROM enrollments
+                WHERE course_id = %s
+                """
+                cur.execute(query, (course_id,))
+                return cur.fetchone()[0]
+        except Exception as e:
+            logger.error(f"Error fetching student count: {str(e)}")
+            return 0
+
+    def get_students_with_lowest_attendance(self, schedule_ids: list, students_ids: list, limit: int = 10) -> list:
+        """
+        Возвращает список студентов с информацией о посещаемости.
+        """
+        try:
+            with self.conn.cursor() as cur:
+                attendance_query = """
+                SELECT s.student_id, COALESCE((
+                    SELECT COUNT(*)
+                    FROM attendance a
+                    WHERE a.student_id = s.student_id AND schedule_id = ANY(%s)
+                ), 0) AS attendance_count
+                FROM unnest(%s) AS s(student_id)
+                ORDER BY attendance_count ASC, s.student_id ASC
+                LIMIT %s
+                """
+                cur.execute(attendance_query, (schedule_ids, students_ids, limit))
+                results = []
+                total_lectures = len(schedule_ids)
+                for row in cur.fetchall():
+                    student_id, attendance_count = row
+                    missed_count = total_lectures -attendance_count
+                    attendance_percent = round(
+                        (attendance_count / total_lectures) * 100, 2
+                    ) if total_lectures > 0 else 0
+                    student_data = {
+                        'student_id': student_id,
+                        'missed_count': missed_count,
+                        'total_lectures': total_lectures,
+                        'attendance_percent': attendance_percent
+                    }
+                    results.append(student_data)
+                    logger.info(
+                        f"Студент (ID: {student_id}): "
+                        f"пропущено {missed_count} из {total_lectures} лекций "
+                        f"({attendance_percent}% посещаемости)"
+                    )
+                logger.info(f"Най omissionдено {len(results)} студентов с низкой посещаемостью")
+                return results
+        except Exception as e:
+            logger.error(f"Ошибка при анализе посещаемости: {str(e)}")
+            return []
+
+    # Новые функции для лабораторных работ
+    def get_courses_lectures_lab2(self, start_date: date, end_date: date) -> list:
         """
         Метод для Лабораторной работы №2: Получение списка курсов и их лекций за указанный период.
-        :param start_date: Начальная дата периода (тип date).
-        :param end_date: Конечная дата периода (тип date).
-        :return: Список словарей с информацией о курсах и лекциях.
         """
         try:
             with self.conn.cursor() as cur:
@@ -74,17 +153,15 @@ class PostgresTool:
                 cur.execute(query, (start_date, end_date))
                 columns = [desc[0] for desc in cur.description]
                 results = [dict(zip(columns, row)) for row in cur.fetchall()]
-                logger.info(f"Fetched {len(results)} courses and lectures")
+                logger.info(f"Fetched {len(results)} courses and lectures for lab2")
                 return results
         except Exception as e:
-            logger.error(f"Error fetching courses and lectures: {str(e)}")
+            logger.error(f"Error fetching courses and lectures for lab2: {str(e)}")
             return []
 
-    def get_student_count(self, course_id: int) -> int:
+    def get_student_count_lab2(self, course_id: int) -> int:
         """
         Метод для Лабораторной работы №2: Подсчет количества студентов на курсе.
-        :param course_id: ID курса (целое число).
-        :return: Количество студентов (целое число).
         """
         try:
             with self.conn.cursor() as cur:
@@ -98,20 +175,15 @@ class PostgresTool:
                 """
                 cur.execute(query, (course_id,))
                 count = cur.fetchone()[0]
-                logger.info(f"Student count for course {course_id}: {count}")
+                logger.info(f"Student count for course {course_id} (lab2): {count}")
                 return count
         except Exception as e:
-            logger.error(f"Error fetching student count: {str(e)}")
+            logger.error(f"Error fetching student count for lab2: {str(e)}")
             return 0
 
-    def get_course_lectures(self, course_id: int, semester: int, year: int, term: str = None) -> list:
+    def get_course_lectures_lab1(self, course_id: int, semester: int, year: int, term: str = None) -> list:
         """
         Метод для Лабораторной работы №1: Получение лекций курса с возможной фильтрацией по термину.
-        :param course_id: ID курса (целое число).
-        :param semester: Номер семестра (целое число).
-        :param year: Год (целое число).
-        :param term: Строка для фильтрации тем лекций (опционально).
-        :return: Список словарей с данными о лекциях.
         """
         try:
             with self.conn.cursor() as cur:
@@ -140,21 +212,15 @@ class PostgresTool:
                 cur.execute(query, tuple(params))
                 columns = [desc[0] for desc in cur.description]
                 results = [dict(zip(columns, row)) for row in cur.fetchall()]
-                logger.info(f"Fetched {len(results)} lectures for course {course_id}")
+                logger.info(f"Fetched {len(results)} lectures for course {course_id} (lab1)")
                 return results
         except Exception as e:
-            logger.error(f"Error fetching course lectures: {str(e)}")
+            logger.error(f"Error fetching course lectures for lab1: {str(e)}")
             return []
 
-    def get_students_with_lowest_attendance(self, schedule_ids: list, start_date: date, end_date: date, term: str = None, limit: int = 10) -> list:
+    def get_students_with_lowest_attendance_lab1(self, schedule_ids: list, start_date: date, end_date: date, term: str = None, limit: int = 10) -> list:
         """
         Метод для Лабораторной работы №1: Получение студентов с минимальной посещаемостью.
-        :param schedule_ids: Список ID расписаний (список целых чисел).
-        :param start_date: Начальная дата периода (тип date).
-        :param end_date: Конечная дата периода (тип date).
-        :param term: Строка для фильтрации по теме лекций (опционально).
-        :param limit: Максимальное количество студентов в результате (по умолчанию 10).
-        :return: Список словарей с данными о студентах и их посещаемости.
         """
         try:
             with self.conn.cursor() as cur:
@@ -211,44 +277,32 @@ class PostgresTool:
                         f"missed {missed_count} of {total_lectures} lectures "
                         f"({attendance_percent}% attendance)"
                     )
-                logger.info(f"Found {len(results)} students with low attendance")
+                logger.info(f"Found {len(results)} students with low attendance for lab1")
                 return results
         except Exception as e:
-            logger.error(f"Error analyzing attendance: {str(e)}")
+            logger.error(f"Error analyzing attendance for lab1: {str(e)}")
             return []
 
     def close(self):
-        """
-        Закрытие соединения с базой данных.
-        """
         if self.conn:
             self.conn.close()
             logger.info("PostgreSQL connection closed")
 
     def __del__(self):
-        """
-        Деструктор: автоматически закрывает соединение при удалении объекта.
-        """
         self.close()
 
 if __name__ == "__main__":
     from datetime import datetime
     tool = PostgresTool()
     try:
+        # Пример использования оригинальной функции
+        course_lectures = tool.get_course_lectures(course_id=1, semester=1, year=2023)
+        print(f"Оригинальная функция: Получено {len(course_lectures)} лекций")
+
+        # Пример использования новой функции для Лабораторной работы №2
         start_date = datetime.strptime("2023-09-01", "%Y-%m-%d").date()
         end_date = datetime.strptime("2023-12-31", "%Y-%m-%d").date()
-        courses_lectures = tool.get_courses_lectures(start_date, end_date)
+        courses_lectures = tool.get_courses_lectures_lab2(start_date, end_date)
         print(f"Лабораторная №2: Получено {len(courses_lectures)} лекций")
-
-        course_lectures = tool.get_course_lectures(course_id=1, semester=1, year=2023, term="кинематика")
-        schedule_ids = [1, 2, 3]
-        students = tool.get_students_with_lowest_attendance(
-            schedule_ids=schedule_ids,
-            start_date=start_date,
-            end_date=end_date,
-            term="кинематика",
-            limit=10
-        )
-        print(f"Лабораторная №1: Найдено {len(students)} студентов с низкой посещаемостью")
     finally:
         tool.close()
