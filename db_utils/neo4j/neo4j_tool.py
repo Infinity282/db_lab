@@ -9,7 +9,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
 class Neo4jTool:
     def __init__(self, host: str = NEO4J_URI):
         """Инициализация класса, но соединение пока не устанавливаем"""
@@ -88,24 +87,3 @@ class Neo4jTool:
             if self.neo_driver:
                 self.neo_driver.close()
                 self.neo_driver = None
-
-
-def main():
-    tool = Neo4jTool()
-
-    # Пример использования поиска по диапазону дат
-    schedules = tool.find_lecture_schedules(
-        class_ids=[1, 2, 3, 4, 5, 6],
-        start_date="2023-09-01",
-        end_date="2023-12-31",
-    )
-
-    for schedule in schedules:
-        print(f"Лекция {schedule['class_id']} в аудитории {schedule['room']}")
-        print(f"Дата: {schedule['scheduled_date']}")
-        print(f"Время: {schedule['start_time']} - {schedule['end_time']}")
-        print("-" * 50)
-
-
-if __name__ == "__main__":
-    main()

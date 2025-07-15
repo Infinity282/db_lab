@@ -230,25 +230,3 @@ class PostgresTool:
         Деструктор: автоматически закрывает соединение при удалении объекта.
         """
         self.close()
-
-if __name__ == "__main__":
-    from datetime import datetime
-    tool = PostgresTool()
-    try:
-        start_date = datetime.strptime("2023-09-01", "%Y-%m-%d").date()
-        end_date = datetime.strptime("2023-12-31", "%Y-%m-%d").date()
-        courses_lectures = tool.get_courses_lectures(start_date, end_date)
-        print(f"Лабораторная №2: Получено {len(courses_lectures)} лекций")
-
-        course_lectures = tool.get_course_lectures(course_id=1, semester=1, year=2023, term="кинематика")
-        schedule_ids = [1, 2, 3]
-        students = tool.get_students_with_lowest_attendance(
-            schedule_ids=schedule_ids,
-            start_date=start_date,
-            end_date=end_date,
-            term="кинематика",
-            limit=10
-        )
-        print(f"Лабораторная №1: Найдено {len(students)} студентов с низкой посещаемостью")
-    finally:
-        tool.close()

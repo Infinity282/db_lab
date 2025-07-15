@@ -12,3 +12,4 @@ __pycache__
 Microsoft
 pip
 .venv
+.devcontainer

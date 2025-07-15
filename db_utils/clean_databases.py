@@ -4,6 +4,13 @@ from neo4j import GraphDatabase
 from elasticsearch import Elasticsearch
 import redis
 import logging
+from env import (
+    DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT,
+    MONGO_DB_NAME, MONGO_USERNAME, MONGO_PASSWORD,
+    NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD,
+    ES_HOST, ES_PORT, ES_USER, ES_PASSWORD,
+    REDIS_HOST, REDIS_PORT
+)
 
 # logging setup
 logging.basicConfig(
@@ -195,6 +202,7 @@ class DatabaseCleaner:
             user_indices = [idx for idx in indices if not idx.startswith('.')]
             
             if not user_indices:
+                user_indices = ["No indexes"]
                 logger.info("ElasticSearch: Нет индексов для очистки")
                 return True
                 
@@ -269,36 +277,35 @@ class DatabaseCleaner:
             except Exception as e:
                 logger.error(f"Ошибка при закрытии соединения с {name}: {str(e)}")
 
-
 if __name__ == "__main__":
     config = {
         'postgres': {
-            'dbname': 'postgres_db',
-            'user': 'postgres_user',
-            'password': 'postgres_password',
-            'host': 'localhost',
-            'port': 5432
+            'dbname': DB_NAME,
+            'user': DB_USER,
+            'password': DB_PASSWORD,
+            'host': DB_HOST,
+            'port': DB_PORT
         },
         'mongo': {
-            'host': 'localhost',
+            'host': 'localhost',  # Предполагается из MONGO_URI
             'port': 27017,
-            'dbname': 'university_db',
-            'username': 'admin',
-            'password': 'secret'
+            'dbname': MONGO_DB_NAME,
+            'username': MONGO_USERNAME,
+            'password': MONGO_PASSWORD
         },
         'neo4j': {
-            'uri': 'bolt://localhost:7687',
-            'user': 'neo4j',
-            'password': 'strongpassword'
+            'uri': NEO4J_URI,
+            'user': NEO4J_USER,
+            'password': NEO4J_PASSWORD
         },
         'elastic': {
-            'host': 'localhost:9200',
-            'user': 'elastic',
-            'password': 'secret'
+            'host': f"{ES_HOST}:{ES_PORT}",
+            'user': ES_USER,
+            'password': ES_PASSWORD
         },
         'redis': {
-            'host': 'localhost',
-            'port': 6379
+            'host': REDIS_HOST,
+            'port': REDIS_PORT
         }
     }
 
