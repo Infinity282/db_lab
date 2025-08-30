@@ -86,9 +86,11 @@ TABLES = {
         """,
     "Attendance": """
             (
-                id SERIAL PRIMARY KEY,
+                id SERIAL,
                 schedule_id INTEGER REFERENCES Schedule(id),
-                student_id INTEGER REFERENCES Students(id)
-            )
+                student_id INTEGER REFERENCES Students(id),
+                attendance_date DATE NOT NULL,
+                PRIMARY KEY (id, attendance_date)
+            ) PARTITION BY RANGE (attendance_date);
         """
 }

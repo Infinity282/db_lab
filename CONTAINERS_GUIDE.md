@@ -63,7 +63,9 @@ docker exec -it postgres_container psql -U postgres_user -d postgres_db
 
 ```sql
 \dt                  -- Список таблиц
+
 SELECT * FROM table; -- Просмотр данных
+
 \q                   -- Выход
 ```
 

@@ -16,7 +16,7 @@ def get_report_by_date_and_term():
     data = request.get_json()
     required_fields = ['material', 'start_date', 'end_date']
     if not has_all_required_fields(data, required_fields):
-        jsonify({
+        return jsonify({
             'error': f"Нет необходимых полей: {required_fields}",
             'received': list(data.keys())
         }), 400

@@ -27,7 +27,41 @@ def create_tables():
     try:
         for table_name, definition in TABLES.items():
             create_table(cur, table_name, definition)
+        cur.execute("""
+            CREATE OR REPLACE FUNCTION create_attendance_partition() RETURNS TRIGGER AS $$
+            DECLARE
+                partition_name TEXT;
+                from_date DATE;
+                to_date DATE;
+            BEGIN
+                -- Определяем диапазон дат для партиции (обычно на месяц)
+                from_date := DATE_TRUNC('month', NEW.scheduled_date);
+                to_date := from_date + INTERVAL '1 month';
+                    
+                partition_name := 'attendance_p_' || TO_CHAR(from_date, 'YYYY_MM');
+                
+                -- Создаем партицию, если она еще не существует
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_tables 
+                    WHERE tablename = partition_name
+                ) THEN
+                    EXECUTE format(
+                        'CREATE TABLE %I PARTITION OF Attendance ' ||
+                        'FOR VALUES FROM (%L) TO (%L)',
+                        partition_name, from_date, to_date
+                    );
+                    RAISE NOTICE 'Создана партиция: %', partition_name;
+                END IF;
+                
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
 
+            DROP TRIGGER IF EXISTS trig_create_attendance_partition ON Schedule;
+            CREATE TRIGGER trig_create_attendance_partition
+            AFTER INSERT ON Schedule
+            FOR EACH ROW EXECUTE FUNCTION create_attendance_partition();
+        """)
         conn.commit()
         print("Все таблицы успешно созданы!")
 

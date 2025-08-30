@@ -47,6 +47,61 @@ def insert_data_from_dict(cur, table_name, data):
         cur.execute(query, row)
 
 
+def create_schedule_dict(cur, table_name, data):
+    """Создание словаря schedule_id -> scheduled_date"""
+    print(f"Добавление данных в {table_name}")
+    if table_name not in TABLES:
+        print(f"Таблица {table_name} не найдена в определении TABLES")
+        return
+
+    table_def = TABLES[table_name]
+    columns = parse_table_structure(table_def)
+
+    schedule_dict = {}
+
+    query = generate_insert_query(table_name, columns) + ' RETURNING ID'
+
+    for schedule_row in data:
+        scheduled_date = schedule_row[3]
+
+        cur.execute(query, schedule_row)
+        schedule_id = cur.fetchone()[0]
+
+        schedule_dict[schedule_id] = scheduled_date
+
+    return schedule_dict
+
+
+def insert_attendance_with_schedule_dict(cur, table_name, data, schedule_dict):
+    """Вставка данных в Attendance с использованием словаря schedule"""
+    print("Добавление данных в Attendance с использованием словаря schedule")
+
+    # Парсим структуру таблицы Attendance
+    table_def = TABLES['Attendance']
+    columns = parse_table_structure(table_def)
+    columns = columns[0:4]  # Берем только первые 4 колонки
+
+    query = generate_insert_query(table_name, columns)
+
+    for row in data:
+        # Предполагаем, что row содержит [schedule_id, student_id, ...]
+        # Если в ваших данных ATTENDANCE другой формат, измените индексы
+        schedule_id = row[0]
+        student_id = row[1]
+
+        # Получаем scheduled_date из словаря
+        if schedule_id in schedule_dict:
+            attendance_date = schedule_dict[schedule_id]
+
+            # Вставляем запись
+            cur.execute(query, (schedule_id, student_id, attendance_date))
+            print(
+                f"Вставлена запись: schedule_id={schedule_id}, student_id={student_id}, date={attendance_date}")
+        else:
+            print(
+                f"Предупреждение: schedule_id {schedule_id} не найден в словаре")
+
+
 def insert_data():
     """Основная функция для заполнения БД"""
     conn = psycopg2.connect(
@@ -59,6 +114,8 @@ def insert_data():
     cur = conn.cursor()
 
     try:
+        schedule_dict = {}
+
         # Порядок вставки с учетом зависимостей
         tables_order = [
             ('Universities', UNIVERSITIES),
@@ -75,7 +132,14 @@ def insert_data():
         ]
 
         for table_name, data in tables_order:
-            insert_data_from_dict(cur, table_name, data)
+            if table_name == 'Schedule':
+                schedule_dict = create_schedule_dict(cur, table_name, data)
+                print(f"Создан словарь schedule: {schedule_dict}")
+            elif table_name == 'Attendance':
+                insert_attendance_with_schedule_dict(
+                    cur, table_name, data, schedule_dict)
+            else:
+                insert_data_from_dict(cur, table_name, data)
 
         conn.commit()
         print("Данные успешно добавлены в БД Postgres")
