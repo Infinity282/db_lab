@@ -89,6 +89,58 @@ class Neo4jTool:
                 self.neo_driver.close()
                 self.neo_driver = None
 
+    def find_students_and_lectures(self, start_date: str, end_date: str) -> list:
+        """
+        Поиск лекций, кол-ва студентов и курса лекций по заданному промежутку времени
+
+        :param start_date: Начальная дата в формате 'YYYY-MM-DD'
+        :param end_date: Конечная дата в формате 'YYYY-MM-DD'
+        :return: Список колв-ва студентов, курса и лекций
+        """
+        try:
+            self.neo_driver = self._get_connection()
+
+            cypher = """
+                MATCH (sch:Schedule)
+                WHERE date(sch.scheduled_date) >= date("2023-09-01") AND date(sch.scheduled_date) <= date("2023-09-15")
+                MATCH (s)-[:MEMBER_OF]->(g:StudentGroup)-[:HAS_SCHEDULE]->(sch)
+                WITH sch, COUNT(DISTINCT s) AS total_students
+                MATCH (sch)-[:FOR_CLASS]->(c:Class)-[:BELONGS_TO]->(course:Course)
+                WHERE c.type = "лекция"
+                RETURN
+                course.department_id,
+                course.specialty_id,
+                course.description,
+                course.name,
+                c.name,
+                c.tags,
+                c.type,
+                c.tech_requirements,
+                total_students
+            """
+
+            with self.neo_driver.session() as session:
+                result = session.run(
+                    cypher,
+                    start_date=start_date,
+                    end_date=end_date
+                )
+                response = [dict(record) for record in result]
+
+            logger.info(f"Найдено {len(response)} записей")
+            return response
+
+        except ValueError as ve:
+            logger.error(f"Некорректный формат даты: {ve}")
+            return []
+        except Exception as e:
+            logger.error(f"Ошибка при поиске расписаний: {e}")
+            return []
+        finally:
+            if self.neo_driver:
+                self.neo_driver.close()
+                self.neo_driver = None
+
 
 def main():
     tool = Neo4jTool()

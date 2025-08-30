@@ -30,23 +30,6 @@ class RedisTool:
             logger.error(f"Redis connection error: {str(e)}")
             raise
 
-    def get_student_count(self, course_id):
-        try:
-            key = f"course:{course_id}:students"
-            count = self.client.get(key)
-            return int(count) if count else None
-        except Exception as e:
-            logger.error(f"Redis get error: {str(e)}")
-            return None
-
-    def set_student_count(self, course_id, count):
-        try:
-            key = f"course:{course_id}:students"
-            self.client.set(key, count, ex=3600)  # Кэш на 1 час
-            logger.info(f"Set Redis cache for {key}: {count}")
-        except Exception as e:
-            logger.error(f"Redis set error: {str(e)}")
-
     def get_student_info(self, student_id: int) -> dict:
         """
         Получает информацию о студенте из Redis по его ID
@@ -119,21 +102,6 @@ class RedisTool:
             logger.error(
                 f"Ошибка при получении студентов группы {group_id}: {str(e)}")
             return []
-
-    def set_student_info(self, student_id: int, student_data: dict):
-        """
-        Сохраняет информацию о студенте в Redis
-
-        :param student_id: ID студента
-        :param student_data: Словарь с данными студента
-        """
-        try:
-            self.client.hset(f"student:{student_id}")
-            logger.info(f"Данные студента {student_id} сохранены в Redis")
-
-        except Exception as e:
-            logger.error(
-                f"Ошибка при сохранении данных студента {student_id}: {str(e)}")
 
     def close(self):
         if self.client:

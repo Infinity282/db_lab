@@ -22,12 +22,48 @@ def get_token():
 @jwt_required()
 def proxy_lab1():
     base_url = os.getenv(f'LAB1_URL')
-    resp = requests.post(
-        f"{base_url}/api/lab1/report",
-        json=request.get_json(force=True),
-        headers={'Content-Type': 'application/json'}
-    )
-    return jsonify(resp.json()), resp.status_code
+    try:
+        resp = requests.post(
+            f"{base_url}/api/lab1/report",
+            json=request.get_json(force=True),
+            headers={'Content-Type': 'application/json'}
+        )
+        resp.raise_for_status()
+        return jsonify(resp.json()), resp.status_code
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Ошибка проксирования в lab1: {str(e)}'}), 500
+
+
+@app.route('/api/lab2/report', methods=['POST'])
+@jwt_required()
+def proxy_lab2():
+    base_url = os.getenv('LAB2_URL')
+    try:
+        resp = requests.post(
+            f"{base_url}/api/lab2/report",
+            json=request.get_json(force=True),
+            headers={'Content-Type': 'application/json'}
+        )
+        resp.raise_for_status()
+        return jsonify(resp.json()), resp.status_code
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Ошибка проксирования в lab2: {str(e)}'}), 500
+
+
+@app.route('/api/lab3/report', methods=['POST'])
+@jwt_required()
+def proxy_lab3():
+    base_url = os.getenv('LAB3_URL')
+    try:
+        resp = requests.post(
+            f"{base_url}/api/lab3/report",
+            json=request.get_json(force=True),
+            headers={'Content-Type': 'application/json'}
+        )
+        resp.raise_for_status()
+        return jsonify(resp.json()), resp.status_code
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Ошибка проксирования в lab3: {str(e)}'}), 500
 
 
 if __name__ == '__main__':

@@ -32,46 +32,6 @@ class PostgresTool:
             logger.error(f"PostgreSQL connection error: {str(e)}")
             raise
 
-    def get_course_lectures(self, course_id, semester, year):
-        try:
-            with self.conn.cursor() as cur:
-                query = """
-                SELECT
-                    c.id AS course_id,
-                    c.name AS course_name,
-                    l.id AS lecture_id,
-                    l.topic,
-                    l.date,
-                    l.duration
-                FROM courses c
-                JOIN lectures l ON c.id = l.course_id
-                WHERE
-                    c.id = %s
-                    AND c.semester = %s
-                    AND c.year = %s
-                """
-                cur.execute(query, (course_id, semester, year))
-                columns = [desc[0] for desc in cur.description]
-                results = [dict(zip(columns, row)) for row in cur.fetchall()]
-                return results
-        except Exception as e:
-            logger.error(f"Error fetching course lectures: {str(e)}")
-            return []
-
-    def get_student_count(self, course_id):
-        try:
-            with self.conn.cursor() as cur:
-                query = """
-                SELECT COUNT(*)
-                FROM enrollments
-                WHERE course_id = %s
-                """
-                cur.execute(query, (course_id,))
-                return cur.fetchone()[0]
-        except Exception as e:
-            logger.error(f"Error fetching student count: {str(e)}")
-            return 0
-
     def get_students_with_lowest_attendance(self, schedule_ids: list, students_ids: list, limit: int = 10) -> list:
         """
         Возвращает список студентов с информацией о посещаемости
