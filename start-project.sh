@@ -28,8 +28,10 @@ fi
 echo "Запускаем контейнеры..."
 docker compose up -d
 
-sleep 75s
+sleep 45s
 
 # Старт проекта
 echo "Запускаем проект..."
 python setup_project.py
+
+sh test-apis.sh

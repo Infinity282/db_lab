@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from db_utils.neo4j.neo4j_tool import Neo4jTool
+from db_utils.redis.redis_tool import RedisTool
 from utils import has_all_required_fields, get_date_range
 
 import logging
@@ -55,12 +56,21 @@ def get_classroom_requirements():
             course_name = item['course.name']
 
             # Создаем структуру для лекции
+            student_count = 0
+
+            for group_id in item['group_ids']:
+                redis_tool = RedisTool(host='localhost')
+                students = redis_tool.get_student_count_by_group_id(
+                    group_id=group_id
+                )
+                student_count += students
+
             lecture_data = {
                 'name': item['c.name'],
                 'tags': item['c.tags'],
                 'type': item['c.type'],
                 'tech_requirements': item['c.tech_requirements'],
-                'student_count': item['total_students']
+                'student_count': student_count
             }
 
             if course_name not in unique_courses:
@@ -70,7 +80,7 @@ def get_classroom_requirements():
                     'department_id': item['course.department_id'],
                     'specialty_id': item['course.specialty_id'],
                     'description': item['course.description'],
-                    'lectures': [lecture_data]
+                    'lectures': [lecture_data],
                 }
             else:
                 unique_courses[course_name]['lectures'].append(lecture_data)

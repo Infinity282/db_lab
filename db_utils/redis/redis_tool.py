@@ -103,6 +103,32 @@ class RedisTool:
                 f"Ошибка при получении студентов группы {group_id}: {str(e)}")
             return []
 
+    def get_student_count_by_group_id(self, group_id: int) -> int:
+        """
+        Получает количество студентов по ID группы
+
+        :param group_id: ID группы
+        :return: Количество студентов или 0, если группа не найдена
+        """
+        try:
+            index_key = f"index:student:group_id:{group_id}"
+
+            if not self.client.exists(index_key):
+                logger.warning(f"Индекс группы {group_id} не найден в Redis")
+                return 0
+
+            # Получаем количество студентов в множестве
+            student_count = self.client.scard(index_key)
+
+            logger.info(
+                f"В группе {group_id} найдено {student_count} студентов")
+            return student_count
+
+        except Exception as e:
+            logger.error(
+                f"Ошибка при подсчете студентов группы {group_id}: {str(e)}")
+            return 0
+
     def close(self):
         if self.client:
             self.client.close()

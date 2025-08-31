@@ -69,6 +69,13 @@ def test_generate_lectures_report(client):
                                     "tags": "Обычный тэг",
                                     "tech_requirements": "Доска, маркеры",
                                     "type": "лекция"
+                                },
+                                {
+                                    "name": "Космология: теория Большого взрыва",
+                                    "student_count": 12,
+                                    "tags": "Специальный тэг",
+                                    "tech_requirements": "Доска, маркеры",
+                                    "type": "лекция"
                                 }
                             ],
                             "name": "Введение в астрофизику",
@@ -79,6 +86,7 @@ def test_generate_lectures_report(client):
             "year": "2023"
         }
     }
+
     response = client.post(
         BASE_URL,
         data=json.dumps(request_data),

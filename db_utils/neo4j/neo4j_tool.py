@@ -101,12 +101,20 @@ class Neo4jTool:
             self.neo_driver = self._get_connection()
 
             cypher = """
-                MATCH (sch:Schedule)
-                WHERE date(sch.scheduled_date) >= date("2023-09-01") AND date(sch.scheduled_date) <= date("2023-09-15")
-                MATCH (s)-[:MEMBER_OF]->(g:StudentGroup)-[:HAS_SCHEDULE]->(sch)
-                WITH sch, COUNT(DISTINCT s) AS total_students
-                MATCH (sch)-[:FOR_CLASS]->(c:Class)-[:BELONGS_TO]->(course:Course)
+                MATCH (c:Class)-[:BELONGS_TO]->(course:Course)
                 WHERE c.type = "лекция"
+
+                MATCH (c)<-[:FOR_CLASS]-(sch:Schedule)
+                WHERE date(sch.scheduled_date) >= date($start_date) 
+                AND date(sch.scheduled_date) <= date($end_date)
+
+                MATCH (g:StudentGroup)-[:HAS_SCHEDULE]->(sch)
+
+                WITH 
+                course,
+                c,
+                COLLECT(DISTINCT g.postgres_id) as group_ids
+
                 RETURN
                 course.department_id,
                 course.specialty_id,
@@ -116,7 +124,7 @@ class Neo4jTool:
                 c.tags,
                 c.type,
                 c.tech_requirements,
-                total_students
+                group_ids
             """
 
             with self.neo_driver.session() as session:
