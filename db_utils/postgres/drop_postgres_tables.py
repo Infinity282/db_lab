@@ -1,6 +1,6 @@
 import psycopg2
 from env import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
-from .tables import TABLES
+from db_utils.postgres.tables import TABLES
 
 
 def drop_tables():

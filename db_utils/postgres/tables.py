@@ -32,7 +32,6 @@ TABLES = {
             (
                 id SERIAL PRIMARY KEY,
                 department_id INTEGER REFERENCES Departments(id),
-                specialty_id INTEGER REFERENCES Specialties(id),
                 name VARCHAR(50) NOT NULL,
                 course_year INTEGER
             )
@@ -54,8 +53,7 @@ TABLES = {
                 department_id INTEGER REFERENCES Departments(id),
                 specialty_id INTEGER REFERENCES Specialties(id),
                 name VARCHAR(255) NOT NULL,
-                description TEXT,
-                tech_requirements TEXT
+                description TEXT
             )
         """,
     "Class": """
@@ -63,7 +61,9 @@ TABLES = {
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(100) NOT NULL,
                 course_of_class_id INTEGER REFERENCES Course_of_classes(id),
-                type VARCHAR(50) NOT NULL
+                tags TEXT,
+                type VARCHAR(50) NOT NULL,
+                tech_requirements TEXT
             )
         """,
     "Class_Materials": """
@@ -77,7 +77,7 @@ TABLES = {
             (
                 id SERIAL PRIMARY KEY,
                 group_id INTEGER REFERENCES Student_Groups(id),
-                course_of_class_id INTEGER REFERENCES Course_of_classes(id),
+                class_id INTEGER REFERENCES Class(id),
                 room VARCHAR(50),
                 scheduled_date DATE,
                 start_time TIME,
@@ -86,11 +86,11 @@ TABLES = {
         """,
     "Attendance": """
             (
-                id SERIAL PRIMARY KEY,
+                id SERIAL,
                 schedule_id INTEGER REFERENCES Schedule(id),
                 student_id INTEGER REFERENCES Students(id),
-                attended BOOLEAN NOT NULL,
-                absence_reason TEXT
-            )
+                attendance_date DATE NOT NULL,
+                PRIMARY KEY (id, attendance_date)
+            ) PARTITION BY RANGE (attendance_date);
         """
 }

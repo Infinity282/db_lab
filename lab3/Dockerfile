@@ -6,11 +6,11 @@ COPY ../env.py .
 
 COPY ../db_utils ./db_utils
 
-COPY lab1/app.py .
+COPY lab3/app.py .
 
-COPY lab1/utils.py .
+COPY lab3/utils.py .
 
-COPY lab1/requirements.txt .
+COPY lab3/requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 

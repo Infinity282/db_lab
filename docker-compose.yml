@@ -2,9 +2,7 @@ services:
   gateway:
     image: gateway
     ports:
-      - '1337:1337'
-    environment:
-      - LAB1_URL=http://lab1:5001
+      - '3001:3001'
     networks:
       - db-network
 
@@ -12,6 +10,20 @@ services:
     image: lab1
     ports:
       - '5001:5001'
+    networks:
+      - db-network
+
+  lab2:
+    image: lab2
+    ports:
+      - '5002:5002'
+    networks:
+      - db-network
+
+  lab3:
+    image: lab3
+    ports:
+      - '5003:5003'
     networks:
       - db-network
 
@@ -83,8 +95,8 @@ services:
       - '5430:5432'
     volumes:
       # - ./pgdata:/var/lib/postgresql/data/pgdata
-      - ./postgres-init:/docker-entrypoint-initdb.d # Добавлено для инициализации
-    command: ['postgres', '-c', 'wal_level=logical'] # Включение логической репликации
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    command: ['postgres', '-c', 'wal_level=logical']
     networks:
       - db-network
 
