@@ -21,8 +21,8 @@ def get_token():
 @app.route('/api/lab1/report', methods=['POST'])
 @jwt_required()
 def proxy_lab1():
-    base_url = os.getenv(f'LAB1_URL')
     try:
+        base_url = 'http://lab1:5001'
         resp = requests.post(
             f"{base_url}/api/lab1/report",
             json=request.get_json(force=True),
@@ -37,8 +37,8 @@ def proxy_lab1():
 @app.route('/api/lab2/report', methods=['POST'])
 @jwt_required()
 def proxy_lab2():
-    base_url = os.getenv('LAB2_URL')
     try:
+        base_url = 'http://lab2:5002'
         resp = requests.post(
             f"{base_url}/api/lab2/report",
             json=request.get_json(force=True),
@@ -53,8 +53,8 @@ def proxy_lab2():
 @app.route('/api/lab3/report', methods=['POST'])
 @jwt_required()
 def proxy_lab3():
-    base_url = os.getenv('LAB3_URL')
     try:
+        base_url = 'http://lab3:5003'
         resp = requests.post(
             f"{base_url}/api/lab3/report",
             json=request.get_json(force=True),

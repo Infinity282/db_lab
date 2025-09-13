@@ -1,8 +1,6 @@
 import json
-from app import app
+from app import BASE_URL, app
 import pytest
-
-BASE_URL = '/api/lab2/report'
 
 
 @pytest.fixture
@@ -30,21 +28,21 @@ def test_generate_lectures_report(client):
                                 {
                                     "name": "Кинематика точки и твёрдого тела",
                                     "student_count": 12,
-                                    "tags": "Специальный тэг",
+                                    "tags": "Кафедра теоретической механики",
                                     "tech_requirements": "Доска, маркеры, проектор, калькулятор",
                                     "type": "лекция"
                                 },
                                 {
                                     "name": "Динамика материальной точки",
                                     "student_count": 12,
-                                    "tags": "Специальный тэг",
+                                    "tags": "Кафедра теоретической механики",
                                     "tech_requirements": "Доска, маркеры, проектор, калькулятор",
                                     "type": "лекция"
                                 },
                                 {
                                     "name": "Теоремы об изменении энергии и импульса",
                                     "student_count": 12,
-                                    "tags": "Обычный тэг",
+                                    "tags": "Кафедра теоретической механики",
                                     "tech_requirements": "Доска, маркеры, проектор, калькулятор",
                                     "type": "лекция"
                                 }

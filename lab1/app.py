@@ -7,8 +7,10 @@ from utils import has_all_required_fields
 
 app = Flask(__name__)
 
+BASE_URL = '/api/lab1/report'
 
-@app.route('/api/lab1/report', methods=['POST'])
+
+@app.route(BASE_URL, methods=['POST'])
 def get_report_by_date_and_term():
     if not request.is_json:
         return jsonify({'error': 'Запрос должен быть в виде JSON'}), 400
@@ -80,7 +82,7 @@ def get_report_by_date_and_term():
 
     for group_id in group_ids:
         # Нет лишних запросов потому что group_id уникальны
-        group_students = redis_tool.get_student_info_by_group_id(
+        group_students = redis_tool.get_students_info_by_group_id(
             group_id=group_id)
 
         for student_info in group_students:

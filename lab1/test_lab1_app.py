@@ -1,5 +1,5 @@
 import json
-from app import app
+from app import BASE_URL, app
 import pytest
 
 
@@ -119,7 +119,7 @@ def test_generate_attendance_report(client):
     }
 
     response = client.post(
-        '/api/lab1/report',
+        BASE_URL,
         data=json.dumps(request_data),
         content_type='application/json'
     )
@@ -137,7 +137,7 @@ def test_generate_attendance_report_invalid_data(client):
     }
 
     response = client.post(
-        '/api/lab1/report',
+        BASE_URL,
         data=json.dumps(request_data),
         content_type='application/json'
     )
@@ -161,7 +161,7 @@ def test_generate_attendance_report_empty_material(client):
     }
 
     response = client.post(
-        '/api/lab1/report',
+        BASE_URL,
         data=json.dumps(empty_data),
         content_type='application/json'
     )

@@ -16,6 +16,14 @@ else
   echo "Образ lab2 уже существует"
 fi
 
+#Проверка и сборка образа lab3
+if [[ "$(docker images -q lab3 2> /dev/null)" == "" ]]; then
+  echo "Образ lab3 не найден, собираем..."
+  docker build . -t lab3 -f ./lab3/Dockerfile
+else
+  echo "Образ lab3 уже существует"
+fi
+
 # Проверка и сборка образа gateway
 if [[ "$(docker images -q gateway 2> /dev/null)" == "" ]]; then
   echo "Образ gateway не найден, собираем..."

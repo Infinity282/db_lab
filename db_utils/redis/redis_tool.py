@@ -30,43 +30,9 @@ class RedisTool:
             logger.error(f"Redis connection error: {str(e)}")
             raise
 
-    def get_student_info(self, student_id: int) -> dict:
+    def get_students_info_by_group_id(self, group_id: int):
         """
-        Получает информацию о студенте из Redis по его ID
-
-        :param student_id: ID студента
-        :return: Словарь с информацией о студенте или None, если не найден
-        """
-        try:
-            key = f"student:{student_id}"
-
-            # Проверяем существование ключа
-            if not self.client.exists(key):
-                logger.warning(f"Студент с ID {student_id} не найден в Redis")
-                return None
-
-            # Получаем все поля хэша
-            student_data = self.client.hgetall(key)
-
-            # Преобразуем числовые поля из строк
-            if 'id' in student_data:
-                student_data['id'] = int(student_data['id'])
-            if 'course_id' in student_data:
-                student_data['course_id'] = int(student_data['course_id'])
-            if 'year' in student_data:
-                student_data['year'] = int(student_data['year'])
-
-            logger.info(f"Получены данные студента {student_id} из Redis")
-            return student_data
-
-        except Exception as e:
-            logger.error(
-                f"Ошибка при получении данных студента {student_id}: {str(e)}")
-            return None
-
-    def get_student_info_by_group_id(self, group_id: int) -> list[int]:
-        """
-        Получает список ID студентов по ID группы
+        Получает список студентов по ID группы
 
         :param group_id: ID группы
         :return: Список ID студентов или пустой список, если группа не найдена
@@ -90,9 +56,9 @@ class RedisTool:
                 if data:
                     data["id"] = int(data["id"])
                     data["group_id"] = int(data.get("group_id", 0))
-                    data["course_id"] = int(data.get("course_id", 0))
                     result.append(data)
 
+            result.sort(key=lambda x: x["id"])
             logger.info(f"Получены данные студента {group_id} из Redis")
             logger.info(f"Студент: {result}")
 
@@ -103,7 +69,7 @@ class RedisTool:
                 f"Ошибка при получении студентов группы {group_id}: {str(e)}")
             return []
 
-    def get_student_count_by_group_id(self, group_id: int) -> int:
+    def get_student_count_by_group_id(self, group_id: int):
         """
         Получает количество студентов по ID группы
 

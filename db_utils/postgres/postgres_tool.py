@@ -32,7 +32,44 @@ class PostgresTool:
             logger.error(f"PostgreSQL connection error: {str(e)}")
             raise
 
-    def get_students_with_lowest_attendance(self, schedule_ids: list, students_ids: list, limit: int = 10) -> list:
+    def get_student_group_by_name(self, group_name: str):
+        """
+        Возвращает id группы студентов по названию группы
+
+        :param group_name: название группы
+        :return: id группы (число) или None если группа не найдена
+        """
+        try:
+            with self.conn.cursor() as cur:
+                query = """
+                SELECT id, department_id, name, course_year FROM Student_Groups
+                WHERE LOWER(name) LIKE LOWER(%s)
+                """
+                cur.execute(query, (group_name,))
+
+                result = cur.fetchone()
+
+                if result:
+                    id, department_id, name, course_year = result
+                    group_info = {
+                        "id": id,
+                        "department_id": department_id,
+                        "name": name,
+                        "course_year": course_year,
+                    }
+                    logger.info(
+                        f"Найдена группа '{group_name}' с ID: {group_info['id']}")
+                    return group_info
+                else:
+                    logger.warning(
+                        f"Группа с названием '{group_name}' не найдена")
+                    return None
+
+        except Exception as e:
+            logger.error(f"Ошибка при поиске группы по названию: {str(e)}")
+            return None
+
+    def get_students_with_lowest_attendance(self, schedule_ids: list, students_ids: list, limit: int = 10):
         """
         Возвращает список студентов с информацией о посещаемости
 
@@ -95,68 +132,36 @@ class PostgresTool:
             )
             return []
 
-    def get_students_with_lowest_attendance(self, schedule_ids: list, students_ids: list, limit: int = 10) -> list:
+    def get_student_attendance(self, student_id: int, schedule_list: list[str]):
         """
-        Возвращает список студентов с информацией о посещаемости
+        Возвращает посещение студента по ID расписаний и его ID
 
-        :param schedule_ids: Массив ID расписаний для анализа
-        :param students_ids: Массив ID студентов для анализа
-        :param limit: Количество возвращаемых студентов
-        :return: Список словарей в формате [{
-            'student_id': int, 
-            'missed_count': int,
-            'total_lectures': int,
-            'attendance_percent': float
-        }, ...]
+        :param student_id: ID студента
+        :param schedule_list: массив ID расписаний
+        :return: attendance_info: информация об оставшихся лекция и прослушанных
         """
         try:
             with self.conn.cursor() as cur:
-                attendance_query = """
-                SELECT s.student_id, COALESCE((
-                    SELECT COUNT(*)
-                    FROM attendance a
-                    WHERE a.student_id = s.student_id AND schedule_id = ANY(%s)
-                ), 0) AS attendance_count
-                FROM unnest(%s) AS s(student_id)
-                ORDER BY attendance_count ASC, s.student_id ASC
-                LIMIT %s
+                query = """
+                    SELECT COUNT(*) AS attendance_count
+                    FROM Attendance
+                    WHERE student_id = %s
+                    AND schedule_id = ANY(%s);
                 """
-                cur.execute(attendance_query,
-                            (schedule_ids, students_ids, limit))
+                cur.execute(query, (student_id, schedule_list,))
 
-                results = []
-                total_lectures = len(schedule_ids)
-                for row in cur.fetchall():
-                    student_id, attendance_count = row
-                    missed_count = total_lectures - attendance_count
-                    attendance_percent = round(
-                        (attendance_count / total_lectures) * 100, 2
-                    ) if len(schedule_ids) > 0 else 0
+                result = cur.fetchone()
 
-                    student_data = {
-                        'student_id': student_id,
-                        'missed_count': missed_count,
-                        'total_lectures': total_lectures,
-                        'attendance_percent': attendance_percent
-                    }
-                    results.append(student_data)
-
-                    logger.info(
-                        f"Студент (ID: {student_id}): "
-                        f"пропущено {missed_count} из {total_lectures} лекций "
-                        f"({attendance_percent}% посещаемости)"
-                    )
-
-                logger.info(
-                    f"Найдено {len(results)} студентов с низкой посещаемостью"
-                )
-                return results
+                if result:
+                    return result[0]
+                else:
+                    logger.warning(
+                        f"Для расписаний '{schedule_list}' не найдены посещения")
+                    return None
 
         except Exception as e:
-            logger.error(
-                f"Ошибка при анализе посещаемости: {str(e)}"
-            )
-            return []
+            logger.error(f"Ошибка при поиске группы по названию: {str(e)}")
+            return None
 
     def close(self):
         if self.conn:

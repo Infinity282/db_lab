@@ -3,9 +3,6 @@ services:
     image: gateway
     ports:
       - '3001:3001'
-    environment:
-      - LAB1_URL=http://lab1:5001
-      - LAB2_URL=http://lab2:5002
     networks:
       - db-network
 
@@ -15,11 +12,18 @@ services:
       - '5001:5001'
     networks:
       - db-network
-  
+
   lab2:
     image: lab2
     ports:
       - '5002:5002'
+    networks:
+      - db-network
+
+  lab3:
+    image: lab3
+    ports:
+      - '5003:5003'
     networks:
       - db-network
 

@@ -2,10 +2,9 @@ from flask import Flask, request, jsonify
 from db_utils.neo4j.neo4j_tool import Neo4jTool
 from db_utils.redis.redis_tool import RedisTool
 from utils import has_all_required_fields, get_date_range
-
 import logging
 
-# Настройка логирования
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
@@ -15,7 +14,10 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 
-@app.route('/api/lab2/report', methods=['POST'])
+BASE_URL = '/api/lab2/report'
+
+
+@app.route(BASE_URL, methods=['POST'])
 def get_classroom_requirements():
     """
     Обработчик POST-запроса для генерации отчета о требованиях к аудиториям (Лабораторная работа №2).

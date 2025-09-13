@@ -149,6 +149,45 @@ class Neo4jTool:
                 self.neo_driver.close()
                 self.neo_driver = None
 
+    def find_special_lectures_and_course_of_lectures(self, group_id: int, special_tag: str) -> list:
+        """
+        Поиск лекций, информации о курсе по специальному тэгу дисциплины и id группы
+        """
+        try:
+            self.neo_driver = self._get_connection()
+
+            cypher = """
+                MATCH (g:StudentGroup {postgres_id: $group_id})-[:HAS_SCHEDULE]->(sch:Schedule)
+                MATCH (sch)-[:FOR_CLASS]->(c:Class)-[:BELONGS_TO]->(course:Course)
+                WHERE c.type = 'лекция'
+                AND $special_tag IN c.tags
+                RETURN
+                course.postgres_id as course_id,
+                course.specialty_id,
+                course.name,
+                course.description,
+                COLLECT(sch.postgres_id) as schedule_ids
+            """
+
+            with self.neo_driver.session() as session:
+                result = session.run(
+                    cypher,
+                    group_id=group_id,
+                    special_tag=special_tag
+                )
+                response = [dict(record) for record in result]
+
+            logger.info(f"Найдено {len(response)} записей")
+            return response
+
+        except Exception as e:
+            logger.error(f"Ошибка при поиске расписаний: {e}")
+            return []
+        finally:
+            if self.neo_driver:
+                self.neo_driver.close()
+                self.neo_driver = None
+
 
 def main():
     tool = Neo4jTool()
