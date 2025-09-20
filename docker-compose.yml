@@ -42,7 +42,7 @@ services:
       - '27017:27017'
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=secret
+      - MONGO_INITDB_ROOT_PASSWORD=pass
     # volumes:
     #   - ./mongodb_data:/data/db
     networks:
@@ -52,7 +52,7 @@ services:
     image: neo4j:5.24.1-community
     container_name: neo4j
     environment:
-      - NEO4J_AUTH=neo4j/strongpassword
+      - NEO4J_AUTH=neo4j/password
     ports:
       - '7474:7474'
       - '7687:7687'
@@ -61,7 +61,7 @@ services:
     #   - ./neo4j_logs:/logs
     #   - ./neo4j_import:/import
     healthcheck:
-      test: ['CMD', 'cypher-shell', '-u', 'neo4j', '-p', 'strongpassword', 'RETURN 1;']
+      test: ['CMD', 'cypher-shell', '-u', 'neo4j', '-p', 'password', 'RETURN 1;']
       interval: 10s
       timeout: 5s
       retries: 3
@@ -76,7 +76,7 @@ services:
     environment:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms1g -Xmx1g
-      - ELASTIC_PASSWORD=secret
+      - ELASTIC_PASSWORD=pass
       - xpack.security.http.ssl.enabled=false
     # volumes:
     #   - ./elastic_data:/usr/share/elasticsearch/data
@@ -88,7 +88,7 @@ services:
     container_name: postgres_container
     environment:
       POSTGRES_USER: postgres_user
-      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_PASSWORD: pass
       POSTGRES_DB: postgres_db
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:

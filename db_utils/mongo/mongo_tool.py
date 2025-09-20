@@ -1,3 +1,4 @@
+from typing import Union
 from pymongo import MongoClient
 import logging
 from env import (MONGO_URI, MONGO_DB_NAME, MONGO_USERNAME, MONGO_PASSWORD)
@@ -38,7 +39,7 @@ class MongoTool:
             logger.error(f"Ошибка подключения к MongoDB: {e}")
             return False
 
-    def get_department_name_by_id(self, department_id: int) -> str | None:
+    def get_department_name_by_id(self, department_id: int) -> Union[str, None]:
         """
         Возвращает название кафедры по её ID
 

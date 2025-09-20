@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, Response, request, jsonify
 import os
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 import requests
@@ -28,10 +28,17 @@ def proxy_lab1():
             json=request.get_json(force=True),
             headers={'Content-Type': 'application/json'}
         )
-        resp.raise_for_status()
-        return jsonify(resp.json()), resp.status_code
+        return Response(
+            resp.content,
+            status=resp.status_code,
+            headers=dict(resp.headers)
+        )
+    except requests.exceptions.Timeout:
+        return jsonify({'error': f'Таймаут при обращении'}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({'error': f'Не удалось подключиться'}), 503
     except requests.exceptions.RequestException as e:
-        return jsonify({'error': f'Ошибка проксирования в lab1: {str(e)}'}), 500
+        return jsonify({'error': f'Ошибка проксирования: {str(e)}'}), 502
 
 
 @app.route('/api/lab2/report', methods=['POST'])
@@ -44,10 +51,17 @@ def proxy_lab2():
             json=request.get_json(force=True),
             headers={'Content-Type': 'application/json'}
         )
-        resp.raise_for_status()
-        return jsonify(resp.json()), resp.status_code
+        return Response(
+            resp.content,
+            status=resp.status_code,
+            headers=dict(resp.headers)
+        )
+    except requests.exceptions.Timeout:
+        return jsonify({'error': f'Таймаут при обращении'}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({'error': f'Не удалось подключиться'}), 503
     except requests.exceptions.RequestException as e:
-        return jsonify({'error': f'Ошибка проксирования в lab2: {str(e)}'}), 500
+        return jsonify({'error': f'Ошибка проксирования: {str(e)}'}), 502
 
 
 @app.route('/api/lab3/report', methods=['POST'])
@@ -60,10 +74,17 @@ def proxy_lab3():
             json=request.get_json(force=True),
             headers={'Content-Type': 'application/json'}
         )
-        resp.raise_for_status()
-        return jsonify(resp.json()), resp.status_code
+        return Response(
+            resp.content,
+            status=resp.status_code,
+            headers=dict(resp.headers)
+        )
+    except requests.exceptions.Timeout:
+        return jsonify({'error': f'Таймаут при обращении'}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({'error': f'Не удалось подключиться'}), 503
     except requests.exceptions.RequestException as e:
-        return jsonify({'error': f'Ошибка проксирования в lab3: {str(e)}'}), 500
+        return jsonify({'error': f'Ошибка проксирования: {str(e)}'}), 502
 
 
 if __name__ == '__main__':

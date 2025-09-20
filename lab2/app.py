@@ -46,7 +46,7 @@ def get_classroom_requirements():
         logger.info(
             f"Processing report for semester {data['semester']}, year {data['year']}, {start_date}, {end_date}")
 
-        neo4j_tool = Neo4jTool(host='bolt://localhost:7687')
+        neo4j_tool = Neo4jTool(host='bolt://neo4j:7687')
         lectures = neo4j_tool.find_students_and_lectures(
             start_date=start_date,
             end_date=end_date
@@ -61,7 +61,7 @@ def get_classroom_requirements():
             student_count = 0
 
             for group_id in item['group_ids']:
-                redis_tool = RedisTool(host='localhost')
+                redis_tool = RedisTool(host='db_lab-redis-1')
                 students = redis_tool.get_student_count_by_group_id(
                     group_id=group_id
                 )

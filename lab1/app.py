@@ -30,7 +30,7 @@ def get_report_by_date_and_term():
     }
 
     # Elastic ищем все материалы с заданным термином
-    elastic_tool = ElasticTool(host='localhost')
+    elastic_tool = ElasticTool(host='db_lab-elasticsearch-1')
     materials = elastic_tool.search_materials_by_content(data['material'])
 
     # Если материалов нет
@@ -47,7 +47,7 @@ def get_report_by_date_and_term():
         print("-" * 50)
 
     # Neo4j ищем все расписания по промежутку и массиву class_ids из материалов
-    neo4j_tool = Neo4jTool(host='bolt://localhost:7687')
+    neo4j_tool = Neo4jTool(host='bolt://neo4j:7687')
     schedules = neo4j_tool.find_lecture_schedules(
         class_ids=class_ids,
         start_date=data['start_date'],
@@ -75,7 +75,7 @@ def get_report_by_date_and_term():
         print("-" * 50)
 
     # Redis ищем всех студентов по группе
-    redis_tool = RedisTool(host='localhost')
+    redis_tool = RedisTool(host='db_lab-redis-1')
 
     students_ids = set()
     full_student_info = {}
@@ -100,7 +100,7 @@ def get_report_by_date_and_term():
         return jsonify(report=response_body), 200
 
     # Postgres ищем топ 10 студентов
-    postgres_tool = PostgresTool(host='localhost', port='5430')
+    postgres_tool = PostgresTool(host='postgres_container', port='5432')
 
     students = postgres_tool.get_students_with_lowest_attendance(
         schedule_ids=schedule_ids, students_ids=list(students_ids))

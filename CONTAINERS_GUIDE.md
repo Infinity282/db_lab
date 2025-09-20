@@ -113,11 +113,11 @@ SELECT * FROM course_of_classes LIMIT 5;
 ### Подключение к базе данных
 
 ```bash
-docker exec -it db_lab-mongodb_1 mongosh "mongodb://admin:secret@localhost:27017/university_db?authSource=admin"
+docker exec -it db_lab-mongodb_1 mongosh "mongodb://admin:pass@localhost:27017/university_db?authSource=admin"
 ```
 
 - `mongodb_container` — имя контейнера MongoDB.
-- `admin:secret` — учетные данные.
+- `admin:pass` — учетные данные.
 - `university_db` — имя базы данных.
 
 ### Основные команды MongoDB
@@ -152,11 +152,11 @@ db.students.find().limit(5)
 ### Подключение к базе данных
 
 ```bash
-docker exec -it neo4j_container cypher-shell -u neo4j -p neo4j_password
+docker exec -it neo4j_container cypher-shell -u neo4j -p password
 ```
 
 - `neo4j_container` — имя контейнера Neo4j.
-- `neo4j:neo4j_password` — учетные данные.
+- `neo4j:password` — учетные данные.
 
 ### Основные команды Neo4j
 

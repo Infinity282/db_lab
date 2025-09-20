@@ -46,7 +46,7 @@ def get_classroom_requirements():
     try:
         # Получаем id группы по названию
         group_name = data['group_name']
-        postgres_tool = PostgresTool(host='localhost')
+        postgres_tool = PostgresTool(host='postgres_container', port='5432')
         group_info = postgres_tool.get_student_group_by_name(
             group_name=group_name)
 
@@ -56,7 +56,7 @@ def get_classroom_requirements():
 
         # Получаем название кафедры по group_department_id
         print(group_info, group_info['department_id'])
-        mongo_tool = MongoTool(host='localhost')
+        mongo_tool = MongoTool(host='db_lab-mongodb-1')
         department_name = mongo_tool.get_department_name_by_id(
             department_id=int(group_info['department_id'])
         )
@@ -64,7 +64,7 @@ def get_classroom_requirements():
             raise Exception(f'Не найдена кафедра для группы')
 
         # Получаем всех студентов, а также информацию про них
-        redis_tool = RedisTool(host='localhost')
+        redis_tool = RedisTool(host='db_lab-redis-1')
         students = redis_tool.get_students_info_by_group_id(
             group_id=group_info['id']
         )
@@ -72,7 +72,7 @@ def get_classroom_requirements():
             return jsonify(report=response_body), 200
 
         # Ищем все расписания по лекциям со специальным тегом на текущую дату для нашей группы и возвращаем курс лекций, все расписания
-        neo4j_tool = Neo4jTool(host='bolt://localhost:7687')
+        neo4j_tool = Neo4jTool(host='bolt://neo4j:7687')
         schedules = neo4j_tool.find_special_lectures_and_course_of_lectures(
             group_id=group_info['id'], special_tag=department_name)
 
@@ -96,7 +96,7 @@ def get_classroom_requirements():
                     student['id'], schedule['schedule_ids']),
 
                 if not attendance_info:
-                    print(f'нет attendance_info для студента {student['id']}')
+                    print(f'нет attendance_info для студента {student["id"]}')
                     return
 
                 planned_hours = len(schedule['schedule_ids']) * 2
